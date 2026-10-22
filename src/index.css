@@ -1,0 +1,99 @@
+@import 'tailwindcss';
+
+/* Colour tokens. Light by default, dark follows the system setting. */
+:root {
+  color-scheme: light dark;
+
+  --bg: #f6f4ef;
+  --surface: #ffffff;
+  --surface-muted: #efece4;
+  --text: #1f2a28;
+  --text-muted: #6b7570;
+  --border: #e4e0d6;
+  --primary: #1f8a70;
+  --primary-hover: #187560;
+  --primary-soft: #dcefe8;
+  --on-primary: #ffffff;
+  --backdrop: rgb(20 26 24 / 0.45);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111614;
+    --surface: #1a201e;
+    --surface-muted: #232a28;
+    --text: #e7ecea;
+    --text-muted: #96a29d;
+    --border: #2b3432;
+    --primary: #3cbf9b;
+    --primary-hover: #5ccfae;
+    --primary-soft: #1d3a32;
+    --on-primary: #0b1a16;
+    --backdrop: rgb(0 0 0 / 0.6);
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-soft: var(--primary-soft);
+  --color-on-primary: var(--on-primary);
+  --color-backdrop: var(--backdrop);
+
+  --font-sans:
+    system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif,
+    'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji';
+
+  --animate-sheet-up: sheet-up 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  --animate-fade-in: fade-in 180ms ease-out;
+}
+
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Money values: large, bold, digits of equal width so columns line up. */
+@utility amount {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-bg font-sans text-text antialiased;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+  }
+}
