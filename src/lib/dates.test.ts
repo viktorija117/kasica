@@ -1,6 +1,9 @@
 import {
   currentMonthKey,
   dayLabel,
+  dayOfMonth,
+  daysInMonth,
+  defaultDateFor,
   endOfMonthKey,
   monthKeyFromParam,
   monthOfDate,
@@ -53,6 +56,20 @@ describe('day keys', () => {
     expect(endOfMonthKey('2026-10-01')).toBe('2026-10-31')
     expect(endOfMonthKey('2026-02-01')).toBe('2026-02-28')
     expect(endOfMonthKey('2028-02-01')).toBe('2028-02-29')
+  })
+
+  it('counts the days of a month, leap years included', () => {
+    expect(daysInMonth('2026-10-01')).toBe(31)
+    expect(daysInMonth('2026-09-01')).toBe(30)
+    expect(daysInMonth('2026-02-01')).toBe(28)
+    expect(daysInMonth('2028-02-01')).toBe(29)
+    expect(dayOfMonth('2026-10-07')).toBe(7)
+  })
+
+  it('starts new entries today, or on the 1st of another month being viewed', () => {
+    const now = new Date(2026, 9, 27, 10, 0)
+    expect(defaultDateFor('2026-10-01', now)).toBe('2026-10-27')
+    expect(defaultDateFor('2026-09-01', now)).toBe('2026-09-01')
   })
 
   it('labels days in Serbian', () => {

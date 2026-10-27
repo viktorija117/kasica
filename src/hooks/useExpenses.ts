@@ -100,6 +100,7 @@ function useRefreshAfterWrite() {
     if (queryClient.isMutating({ mutationKey: EXPENSE_MUTATION }) > 1) return
     void queryClient.invalidateQueries({ queryKey: queryKeys.allExpenses(householdId) })
     void queryClient.invalidateQueries({ queryKey: queryKeys.suggestions(householdId) })
+    void queryClient.invalidateQueries({ queryKey: queryKeys.monthTotals(householdId) })
   }, [queryClient, householdId])
 }
 
@@ -190,6 +191,7 @@ export function useDeleteExpense() {
             list.filter((row) => row.id !== expense.id),
           )
           void queryClient.invalidateQueries({ queryKey: queryKeys.suggestions(householdId) })
+          void queryClient.invalidateQueries({ queryKey: queryKeys.monthTotals(householdId) })
         } catch {
           showToast({ message: sr.toast.deleteFailed, tone: 'error' })
         } finally {

@@ -6,17 +6,18 @@ type Props = {
   onChange: (value: string) => void
   inputRef?: Ref<HTMLInputElement>
   error?: string
+  label?: string
 }
 
 /** Big amount field that opens the numeric keyboard and accepts both `,` and `.`. */
-export function AmountInput({ value, onChange, inputRef, error }: Props) {
+export function AmountInput({ value, onChange, inputRef, error, label = sr.expenseForm.amount }: Props) {
   const id = useId()
   const errorId = `${id}-error`
 
   return (
     <div className="flex flex-col gap-1">
       <label htmlFor={id} className="text-sm font-medium text-text-muted">
-        {sr.expenseForm.amount}
+        {label}
       </label>
       <div
         className={`flex items-baseline gap-2 rounded-2xl border bg-surface-muted px-4 py-2 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/25 ${

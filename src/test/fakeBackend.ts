@@ -6,6 +6,10 @@ import type { Session } from '../data/auth'
 import type { Category } from '../data/categories'
 import type { Expense, ExpenseInput, ExpenseSuggestion } from '../data/expenses'
 import type { Household, HouseholdMember } from '../data/households'
+import type { Income, IncomeInput } from '../data/incomes'
+import type { MonthSetting, MonthSettingInput } from '../data/monthSettings'
+import type { MonthTotalsRow } from '../data/monthTotals'
+import type { Saving, SavingInput } from '../data/savings'
 
 export const VALID_INVITE_CODE = 'K7M2QX9P'
 const HOUSEHOLD_ID = 'hh-1'
@@ -18,6 +22,10 @@ const state = {
   members: [] as HouseholdMember[],
   categories: [] as Category[],
   expenses: [] as Expense[],
+  incomes: [] as Income[],
+  savings: [] as Saving[],
+  monthSettings: [] as MonthSetting[],
+  nextId: 1,
   listeners: new Set<Listener>(),
 }
 
@@ -79,6 +87,39 @@ function makeExpense(id: string, input: ExpenseInput, createdBy: string | null):
     updated_at: now,
     ...input,
   }
+}
+
+function newId(prefix: string): string {
+  return `${prefix}-${state.nextId++}`
+}
+
+function makeIncome(input: IncomeInput): Income {
+  return {
+    id: newId('inc'),
+    household_id: HOUSEHOLD_ID,
+    received_by: null,
+    note: null,
+    import_batch: null,
+    created_at: new Date().toISOString(),
+    ...input,
+  }
+}
+
+function makeSaving(input: SavingInput): Saving {
+  return {
+    id: newId('sav'),
+    household_id: HOUSEHOLD_ID,
+    note: null,
+    import_batch: null,
+    created_at: new Date().toISOString(),
+    ...input,
+  }
+}
+
+function inMonth<T extends { date: string; created_at: string }>(rows: T[], month: string): T[] {
+  return rows
+    .filter((row) => row.date.slice(0, 7) === month.slice(0, 7))
+    .sort((a, b) => b.date.localeCompare(a.date) || b.created_at.localeCompare(a.created_at))
 }
 
 function databaseError(message: string) {
@@ -171,6 +212,87 @@ export const fakeExpenses = {
   }),
 }
 
+export const fakeIncomes = {
+  fetchIncomes: vi.fn(async (_householdId: string, month: string) => inMonth(state.incomes, month)),
+  createIncome: vi.fn(async (_householdId: string, input: IncomeInput) => {
+    const income = makeIncome(input)
+    state.incomes.push(income)
+    return income
+  }),
+  updateIncome: vi.fn(async (id: string, input: IncomeInput) => {
+    const index = state.incomes.findIndex((income) => income.id === id)
+    state.incomes[index] = { ...state.incomes[index], ...input }
+    return state.incomes[index]
+  }),
+  deleteIncome: vi.fn(async (id: string) => {
+    state.incomes = state.incomes.filter((income) => income.id !== id)
+  }),
+}
+
+export const fakeSavings = {
+  fetchSavings: vi.fn(async (_householdId: string, month: string) => inMonth(state.savings, month)),
+  createSaving: vi.fn(async (_householdId: string, input: SavingInput) => {
+    const saving = makeSaving(input)
+    state.savings.push(saving)
+    return saving
+  }),
+  updateSaving: vi.fn(async (id: string, input: SavingInput) => {
+    const index = state.savings.findIndex((saving) => saving.id === id)
+    state.savings[index] = { ...state.savings[index], ...input }
+    return state.savings[index]
+  }),
+  deleteSaving: vi.fn(async (id: string) => {
+    state.savings = state.savings.filter((saving) => saving.id !== id)
+  }),
+}
+
+export const fakeMonthSettings = {
+  DEFAULT_MONTH_SETTING: { carry_enabled: true, carry_override: null } satisfies MonthSettingInput,
+  fetchMonthSettings: vi.fn(async () => state.monthSettings.map((row) => ({ ...row }))),
+  saveMonthSetting: vi.fn(async (_householdId: string, month: string, input: MonthSettingInput) => {
+    const row: MonthSetting = { household_id: HOUSEHOLD_ID, month, ...input }
+    state.monthSettings = [...state.monthSettings.filter((setting) => setting.month !== month), row]
+    return row
+  }),
+}
+
+// Same sums as the month_totals view.
+export const fakeMonthTotals = {
+  fetchMonthTotals: vi.fn(async () => {
+    const byMonth = new Map<string, MonthTotalsRow>()
+    const add = (date: string, field: 'income' | 'spent' | 'saved', amount: number) => {
+      const month = `${date.slice(0, 7)}-01`
+      const row = byMonth.get(month) ?? {
+        household_id: HOUSEHOLD_ID,
+        month,
+        income: 0,
+        spent: 0,
+        saved: 0,
+        entries: 0,
+      }
+      row[field] = Math.round((row[field] + amount) * 100) / 100
+      row.entries += 1
+      byMonth.set(month, row)
+    }
+    state.incomes.forEach((row) => add(row.date, 'income', row.amount))
+    state.expenses.forEach((row) => add(row.date, 'spent', row.amount))
+    state.savings.forEach((row) => add(row.date, 'saved', row.amount))
+    return [...byMonth.values()].sort((a, b) => a.month.localeCompare(b.month))
+  }),
+}
+
+export function seedIncome(input: Partial<IncomeInput> & Pick<IncomeInput, 'date' | 'amount'>) {
+  const income = makeIncome({ source: 'Plata', received_by: 'user-me', ...input })
+  state.incomes.push(income)
+  return income
+}
+
+export function seedSaving(input: SavingInput) {
+  const saving = makeSaving(input)
+  state.savings.push(saving)
+  return saving
+}
+
 /** Adds an existing expense, as if one of the members had saved it earlier. */
 export function seedExpense(input: Partial<ExpenseInput> & Pick<ExpenseInput, 'date' | 'amount'>) {
   const expense = makeExpense(
@@ -190,6 +312,10 @@ export function resetBackend({ signedIn = false, withHousehold = false } = {}) {
   state.members = []
   state.categories = []
   state.expenses = []
+  state.incomes = []
+  state.savings = []
+  state.monthSettings = []
+  state.nextId = 1
   if (withHousehold) {
     state.household = makeHousehold('Naša kuća')
     state.members = [makeMember('user-me', 'Ja'), makeMember('user-partner', 'Partner')]

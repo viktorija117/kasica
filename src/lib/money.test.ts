@@ -1,4 +1,4 @@
-import { formatAmount, formatRSD, parseAmount } from './money'
+import { amountToText, formatAmount, formatPercent, formatRSD, parseAmount } from './money'
 
 const NBSP = '\u00a0'
 
@@ -59,4 +59,19 @@ describe('parseAmount', () => {
       expect(parseAmount(input)).toBeNull()
     },
   )
+})
+
+describe('formatPercent', () => {
+  it('shows whole percents', () => {
+    expect(formatPercent(0.234)).toBe('23%')
+    expect(formatPercent(1.5)).toBe('150%')
+    expect(formatPercent(0)).toBe('0%')
+  })
+})
+
+describe('amountToText', () => {
+  it('writes the amount back with a decimal comma and without a sign', () => {
+    expect(amountToText(1234.5)).toBe('1234,5')
+    expect(amountToText(-3000)).toBe('3000')
+  })
 })

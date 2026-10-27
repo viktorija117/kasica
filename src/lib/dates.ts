@@ -36,6 +36,16 @@ export function endOfMonthKey(key: MonthKey): DateKey {
   return toDateKey(endOfMonth(monthKeyToDate(key)))
 }
 
+/** Number of days in the month: `2028-02-01` → 29. */
+export function daysInMonth(key: MonthKey): number {
+  return Number(endOfMonthKey(key).slice(8, 10))
+}
+
+/** Day of the month of a date key: `2026-10-27` → 27. */
+export function dayOfMonth(key: DateKey): number {
+  return Number(key.slice(8, 10))
+}
+
 /**
  * Heading for a day in the expense list: `Danas`, `Juče`, otherwise
  * `Ponedeljak, 26. oktobar` (with the year only when it is not the current one).
@@ -83,4 +93,10 @@ export function monthKeyFromParam(param: string | null): MonthKey | null {
   if (!param || !/^\d{4}-\d{2}$/.test(param)) return null
   const date = parse(param, MONTH_PARAM_FORMAT, new Date())
   return isValid(date) ? toMonthKey(date) : null
+}
+
+/** Date a new entry starts with: today in the current month, else the 1st of the shown month. */
+export function defaultDateFor(month: MonthKey, now: Date = new Date()): DateKey {
+  const today = toDateKey(now)
+  return monthOfDate(today) === month ? today : month
 }

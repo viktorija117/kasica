@@ -6,6 +6,11 @@ import { renderApp as renderAt } from './test/renderApp'
 vi.mock('./data/auth', async () => (await import('./test/fakeBackend')).fakeAuth)
 vi.mock('./data/households', async () => (await import('./test/fakeBackend')).fakeHouseholds)
 vi.mock('./data/categories', async () => (await import('./test/fakeBackend')).fakeCategories)
+vi.mock('./data/expenses', async () => (await import('./test/fakeBackend')).fakeExpenses)
+vi.mock('./data/incomes', async () => (await import('./test/fakeBackend')).fakeIncomes)
+vi.mock('./data/savings', async () => (await import('./test/fakeBackend')).fakeSavings)
+vi.mock('./data/monthSettings', async () => (await import('./test/fakeBackend')).fakeMonthSettings)
+vi.mock('./data/monthTotals', async () => (await import('./test/fakeBackend')).fakeMonthTotals)
 
 // The shell is only reachable once signed in with a household; wait for the guards.
 async function renderApp(path = '/') {

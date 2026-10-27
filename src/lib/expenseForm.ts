@@ -1,10 +1,7 @@
 import type { Category } from '../data/categories'
 import type { Expense, ExpenseInput, ExpenseSuggestion, Necessity } from '../data/expenses'
 import type { DateKey } from './dates'
-import { parseAmount } from './money'
-
-// numeric(12, 2) in the database.
-const MAX_AMOUNT = 9_999_999_999.99
+import { amountToText, MAX_AMOUNT, parseAmount } from './money'
 
 export type ExpenseFormState = {
   amountText: string
@@ -45,7 +42,7 @@ export function newExpenseForm(date: DateKey, paidBy: string | null): ExpenseFor
 
 export function expenseToForm(expense: Expense): ExpenseFormState {
   return {
-    amountText: String(expense.amount).replace('.', ','),
+    amountText: amountToText(expense.amount),
     categoryId: expense.category_id,
     description: expense.description,
     date: expense.date,

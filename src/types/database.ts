@@ -370,6 +370,17 @@ export type Database = {
         }
         Relationships: []
       }
+      month_totals: {
+        Row: {
+          household_id: string
+          month: string
+          income: number
+          spent: number
+          saved: number
+          entries: number
+        }
+        Relationships: []
+      }
     }
     Functions: {
       create_household: {

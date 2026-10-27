@@ -1,5 +1,8 @@
 import { sr } from '../i18n/sr'
 
+/** Largest amount a `numeric(12, 2)` column holds. */
+export const MAX_AMOUNT = 9_999_999_999.99
+
 const wholeFormatter = new Intl.NumberFormat('sr-RS', { maximumFractionDigits: 0 })
 const decimalFormatter = new Intl.NumberFormat('sr-RS', {
   minimumFractionDigits: 2,
@@ -13,6 +16,13 @@ export function formatAmount(amount: number): string {
   return Number.isInteger(rounded)
     ? wholeFormatter.format(rounded)
     : decimalFormatter.format(rounded)
+}
+
+const percentFormatter = new Intl.NumberFormat('sr-RS', { style: 'percent', maximumFractionDigits: 0 })
+
+/** A 0–1 ratio as a whole percent: `0.234` → `23%`. */
+export function formatPercent(ratio: number): string {
+  return percentFormatter.format(ratio || 0)
 }
 
 /** `1.234 RSD` — uses a non-breaking space so the currency never wraps to a new line. */
@@ -87,4 +97,9 @@ export function parseAmount(input: string): number | null {
 
   const value = Number(`${digits || '0'}.${fractionPart || '0'}`)
   return Number.isFinite(value) ? sign * value || 0 : null
+}
+
+/** Amount as the user would type it back into a field: `1234.5` → `1234,5`. */
+export function amountToText(amount: number): string {
+  return String(Math.abs(amount)).replace('.', ',')
 }

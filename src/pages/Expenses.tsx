@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { ExpenseFiltersBar } from '../components/ExpenseFiltersBar'
 import { ExpenseList } from '../components/ExpenseList'
+import { MonthMoneySections } from '../components/MonthMoneySections'
 import { MonthSwitcher } from '../components/MonthSwitcher'
 import { PageTitle } from '../components/PageTitle'
 import { QueryStatus } from '../components/QueryStatus'
@@ -52,6 +53,8 @@ export function Expenses() {
     <>
       <PageTitle>{sr.expenses.title}</PageTitle>
       <MonthSwitcher month={month} onChange={setMonth} />
+
+      <MonthMoneySections month={month} memberNames={memberNames} />
 
       <ExpenseFiltersBar
         filters={filters}

@@ -7,6 +7,10 @@ vi.mock('../data/auth', async () => (await import('./fakeBackend')).fakeAuth)
 vi.mock('../data/households', async () => (await import('./fakeBackend')).fakeHouseholds)
 vi.mock('../data/categories', async () => (await import('./fakeBackend')).fakeCategories)
 vi.mock('../data/expenses', async () => (await import('./fakeBackend')).fakeExpenses)
+vi.mock('../data/incomes', async () => (await import('./fakeBackend')).fakeIncomes)
+vi.mock('../data/savings', async () => (await import('./fakeBackend')).fakeSavings)
+vi.mock('../data/monthSettings', async () => (await import('./fakeBackend')).fakeMonthSettings)
+vi.mock('../data/monthTotals', async () => (await import('./fakeBackend')).fakeMonthTotals)
 
 beforeEach(() => {
   vi.clearAllMocks()
