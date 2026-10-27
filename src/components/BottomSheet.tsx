@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, type ReactNode } from 'react'
+import { useEffect, useId, useRef, type ReactNode, type RefObject } from 'react'
 import { sr } from '../i18n/sr'
 import { CloseIcon } from './icons'
 
@@ -6,10 +6,12 @@ type Props = {
   open: boolean
   title: string
   onClose: () => void
+  /** Element to focus when the sheet opens; the panel itself otherwise. */
+  initialFocusRef?: RefObject<HTMLElement>
   children: ReactNode
 }
 
-export function BottomSheet({ open, title, onClose, children }: Props) {
+export function BottomSheet({ open, title, onClose, initialFocusRef, children }: Props) {
   const titleId = useId()
   const panelRef = useRef<HTMLDivElement>(null)
 
@@ -22,13 +24,14 @@ export function BottomSheet({ open, title, onClose, children }: Props) {
     const previousOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     document.addEventListener('keydown', onKeyDown)
-    panelRef.current?.focus()
+    const focusTarget = initialFocusRef?.current ?? panelRef.current
+    focusTarget?.focus()
 
     return () => {
       document.body.style.overflow = previousOverflow
       document.removeEventListener('keydown', onKeyDown)
     }
-  }, [open, onClose])
+  }, [open, onClose, initialFocusRef])
 
   if (!open) return null
 

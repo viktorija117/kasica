@@ -1,4 +1,15 @@
 // All user-facing text lives here so another language can be added later.
+
+/** Serbian noun form for a count: 1 trošak, 2–4 troška, 5+ troškova (21 trošak, 12 troškova). */
+function plural(n: number, one: string, few: string, many: string): string {
+  const lastTwo = n % 100
+  const last = n % 10
+  if (lastTwo >= 11 && lastTwo <= 14) return many
+  if (last === 1) return one
+  if (last >= 2 && last <= 4) return few
+  return many
+}
+
 export const sr = {
   appName: 'Kasica',
   currency: 'RSD',
@@ -32,10 +43,50 @@ export const sr = {
     ],
   },
 
+  day: {
+    today: 'Danas',
+    yesterday: 'Juče',
+  },
+
   sheet: {
     close: 'Zatvori',
-    addExpenseTitle: 'Novi trošak',
-    addExpenseComingSoon: 'Ovde će uskoro biti unos troška.',
+  },
+
+  necessity: {
+    needed: 'Potrebno',
+    unneeded: 'Bespotrebno',
+  },
+
+  expenseForm: {
+    addTitle: 'Novi trošak',
+    editTitle: 'Izmena troška',
+    amount: 'Iznos',
+    amountPlaceholder: '0',
+    category: 'Kategorija',
+    description: 'Opis',
+    descriptionPlaceholder: 'npr. hleb, voda, struja',
+    suggestions: 'Predlozi',
+    date: 'Datum',
+    necessity: 'Potrebno ili bespotrebno',
+    paidBy: 'Ko je platio',
+    note: 'Napomena',
+    addNote: 'Dodaj napomenu',
+    save: 'Sačuvaj',
+    saveAndAdd: 'Sačuvaj i dodaj još',
+    saveChanges: 'Sačuvaj izmene',
+    delete: 'Obriši',
+    saved: (what: string) => `✓ Sačuvano: ${what}`,
+    errorAmount: 'Upiši iznos veći od nule, npr. 450 ili 69,99.',
+    errorCategory: 'Izaberi kategoriju.',
+    errorDate: 'Izaberi datum.',
+    saveFailed: 'Trošak nije sačuvan. Proveri internet i pokušaj ponovo.',
+  },
+
+  toast: {
+    undo: 'Poništi',
+    dismiss: 'Zatvori poruku',
+    expenseDeleted: 'Trošak je obrisan',
+    deleteFailed: 'Brisanje nije uspelo, trošak je vraćen.',
   },
 
   home: {
@@ -46,6 +97,22 @@ export const sr = {
   expenses: {
     title: 'Troškovi',
     empty: 'Još nema troškova za ovaj mesec.',
+    noMatches: 'Nijedan trošak ne odgovara pretrazi i filterima.',
+    search: 'Pretraga po opisu',
+    searchPlaceholder: 'Pretraži opis…',
+    filterCategory: 'Kategorija',
+    filterNecessity: 'Potrebno ili bespotrebno',
+    filterPaidBy: 'Ko je platio',
+    allCategories: 'Sve kategorije',
+    allNecessity: 'Sve',
+    allMembers: 'Svi',
+    nobody: 'Nije upisano',
+    clearFilters: 'Poništi filtere',
+    total: 'Ukupno',
+    count: (n: number) => `${n} ${plural(n, 'trošak', 'troška', 'troškova')}`,
+    unknownCategory: 'Nepoznata kategorija',
+    noDescription: 'Bez opisa',
+    paidBy: (name: string) => `platio/la ${name}`,
   },
 
   year: {

@@ -6,6 +6,7 @@ import { renderApp } from './renderApp'
 vi.mock('../data/auth', async () => (await import('./fakeBackend')).fakeAuth)
 vi.mock('../data/households', async () => (await import('./fakeBackend')).fakeHouseholds)
 vi.mock('../data/categories', async () => (await import('./fakeBackend')).fakeCategories)
+vi.mock('../data/expenses', async () => (await import('./fakeBackend')).fakeExpenses)
 
 beforeEach(() => {
   vi.clearAllMocks()

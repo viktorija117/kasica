@@ -1,6 +1,10 @@
 import {
   currentMonthKey,
+  dayLabel,
+  endOfMonthKey,
   monthKeyFromParam,
+  monthOfDate,
+  todayKey,
   monthKeyToParam,
   monthLabel,
   shiftMonth,
@@ -36,4 +40,26 @@ describe('month keys', () => {
       expect(monthKeyFromParam(param)).toBeNull()
     },
   )
+})
+
+describe('day keys', () => {
+  it('uses the local calendar day, not UTC', () => {
+    expect(todayKey(new Date(2026, 9, 27, 23, 59))).toBe('2026-10-27')
+    expect(todayKey(new Date(2026, 9, 28, 0, 1))).toBe('2026-10-28')
+  })
+
+  it('finds the month of a day and the last day of a month', () => {
+    expect(monthOfDate('2026-10-27')).toBe('2026-10-01')
+    expect(endOfMonthKey('2026-10-01')).toBe('2026-10-31')
+    expect(endOfMonthKey('2026-02-01')).toBe('2026-02-28')
+    expect(endOfMonthKey('2028-02-01')).toBe('2028-02-29')
+  })
+
+  it('labels days in Serbian', () => {
+    const now = new Date(2026, 9, 27, 10, 0)
+    expect(dayLabel('2026-10-27', now)).toBe('Danas')
+    expect(dayLabel('2026-10-26', now)).toBe('Juče')
+    expect(dayLabel('2026-10-25', now)).toBe('Nedelja, 25. oktobar')
+    expect(dayLabel('2025-12-31', now)).toBe('Sreda, 31. decembar 2025.')
+  })
 })

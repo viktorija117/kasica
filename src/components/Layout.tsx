@@ -1,24 +1,30 @@
 import { useCallback, useState } from 'react'
 import { Outlet } from 'react-router'
-import { sr } from '../i18n/sr'
+import { ExpenseSheetContext, type ExpenseSheetRequest } from '../hooks/useExpenseSheet'
 import { BottomNav } from './BottomNav'
-import { BottomSheet } from './BottomSheet'
+import { ExpenseSheet } from './ExpenseSheet'
 import { Header } from './Header'
+import { PendingDeletesProvider } from './PendingDeletesProvider'
+import { ToastProvider } from './ToastProvider'
 
 export function Layout() {
-  const [addOpen, setAddOpen] = useState(false)
-  const closeAdd = useCallback(() => setAddOpen(false), [])
+  const [sheet, setSheet] = useState<ExpenseSheetRequest | null>(null)
+  const closeSheet = useCallback(() => setSheet(null), [])
 
   return (
-    <div className="min-h-dvh">
-      <Header />
-      <main className="mx-auto max-w-lg px-4 pt-4 pb-[calc(7rem+env(safe-area-inset-bottom))]">
-        <Outlet />
-      </main>
-      <BottomNav onAdd={() => setAddOpen(true)} />
-      <BottomSheet open={addOpen} title={sr.sheet.addExpenseTitle} onClose={closeAdd}>
-        <p className="py-6 text-center text-text-muted">{sr.sheet.addExpenseComingSoon}</p>
-      </BottomSheet>
-    </div>
+    <PendingDeletesProvider>
+      <ToastProvider>
+        <ExpenseSheetContext.Provider value={setSheet}>
+          <div className="min-h-dvh">
+            <Header />
+            <main className="mx-auto max-w-lg px-4 pt-4 pb-[calc(7rem+env(safe-area-inset-bottom))]">
+              <Outlet />
+            </main>
+            <BottomNav onAdd={() => setSheet({ mode: 'add' })} />
+            <ExpenseSheet request={sheet} onClose={closeSheet} />
+          </div>
+        </ExpenseSheetContext.Provider>
+      </ToastProvider>
+    </PendingDeletesProvider>
   )
 }
