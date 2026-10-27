@@ -13,4 +13,5 @@ export const queryKeys = {
   savings: (householdId: string, month: string) => ['savings', householdId, month] as const,
   monthTotals: (householdId: string) => ['month-totals', householdId] as const,
   monthSettings: (householdId: string) => ['month-settings', householdId] as const,
+  importBatches: (householdId: string) => ['import-batches', householdId] as const,
 }

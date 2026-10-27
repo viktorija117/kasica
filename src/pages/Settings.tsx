@@ -1,3 +1,4 @@
+import { Link } from 'react-router'
 import { Button } from '../components/Button'
 import { CategoryList } from '../components/CategoryList'
 import { InviteCode } from '../components/InviteCode'
@@ -42,6 +43,16 @@ export function Settings() {
         ) : (
           <QueryStatus error={categories.error} />
         )}
+      </SettingsSection>
+
+      <SettingsSection title={sr.settings.import}>
+        <p className="mb-3 text-sm text-text-muted">{sr.settings.importHint}</p>
+        <Link
+          to="/podesavanja/uvoz"
+          className="inline-flex h-12 w-full items-center justify-center rounded-2xl border border-border bg-surface px-5 font-semibold text-text transition hover:bg-surface-muted active:scale-[0.98]"
+        >
+          {sr.settings.importOpen}
+        </Link>
       </SettingsSection>
 
       <SettingsSection title={sr.settings.account}>

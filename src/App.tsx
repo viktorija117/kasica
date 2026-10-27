@@ -6,6 +6,7 @@ import { GuestOnly, RequireAuth, RequireHousehold, RequireNoHousehold } from './
 import { Expenses } from './pages/Expenses'
 import { Home } from './pages/Home'
 import { HouseholdSetup } from './pages/HouseholdSetup'
+import { Import } from './pages/Import'
 import { Login } from './pages/Login'
 import { Settings } from './pages/Settings'
 import { Year } from './pages/Year'
@@ -26,6 +27,7 @@ export function AppRoutes() {
             <Route path="troskovi" element={<Expenses />} />
             <Route path="godina" element={<Year />} />
             <Route path="podesavanja" element={<Settings />} />
+            <Route path="podesavanja/uvoz" element={<Import />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Route>

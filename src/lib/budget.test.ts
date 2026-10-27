@@ -5,9 +5,11 @@ import {
   monthBalance,
   monthSummary,
   monthTotalsOf,
+  sameAmount,
   sumAmounts,
   sumByCategory,
   sumByDay,
+  sumByMonth,
   withMonthTotals,
   type CarrySetting,
   type MonthTotals,
@@ -359,5 +361,26 @@ describe('sumByDay', () => {
     expect(days[0]).toEqual({ date: '2026-02-01', total: 0 })
     expect(days[2]).toEqual({ date: '2026-02-03', total: 10.5 })
     expect(days[27]).toEqual({ date: '2026-02-28', total: 0 })
+  })
+})
+
+describe('sumByMonth', () => {
+  it('counts and sums entries per month, oldest first', () => {
+    const rows = [expense('2026-09-30', 0.1), expense('2026-08-01', 5), expense('2026-09-01', 0.2)]
+    expect(sumByMonth(rows)).toEqual([
+      { month: '2026-08-01', count: 1, total: 5 },
+      { month: '2026-09-01', count: 2, total: 0.3 },
+    ])
+  })
+
+  it('returns nothing for no entries', () => {
+    expect(sumByMonth([])).toEqual([])
+  })
+})
+
+describe('sameAmount', () => {
+  it('compares to the para', () => {
+    expect(sameAmount(0.1 + 0.2, 0.3)).toBe(true)
+    expect(sameAmount(10396, 10396.01)).toBe(false)
   })
 })

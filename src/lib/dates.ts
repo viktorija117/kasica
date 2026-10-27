@@ -83,6 +83,11 @@ export function monthLabel(key: MonthKey): string {
   return `${sr.month.names[date.getMonth()]} ${date.getFullYear()}`
 }
 
+/** When something happened, in the user's time zone: `27. oktobar 2026. u 21:45`. */
+export function timestampLabel(timestamp: string): string {
+  return format(new Date(timestamp), "d. MMMM yyyy. 'u' HH:mm", { locale: srLatn })
+}
+
 /** Month as it appears in the URL: `2026-10`. */
 export function monthKeyToParam(key: MonthKey): string {
   return format(monthKeyToDate(key), MONTH_PARAM_FORMAT)

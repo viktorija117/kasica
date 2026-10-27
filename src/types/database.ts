@@ -75,6 +75,7 @@ export type Database = {
           monthly_limit: number | null
           default_necessity: Database['public']['Enums']['necessity']
           archived: boolean
+          import_batch: string | null
           created_at: string
         }
         Insert: {
@@ -87,6 +88,7 @@ export type Database = {
           monthly_limit?: number | null
           default_necessity?: Database['public']['Enums']['necessity']
           archived?: boolean
+          import_batch?: string | null
           created_at?: string
         }
         Update: {
@@ -99,9 +101,13 @@ export type Database = {
           monthly_limit?: number | null
           default_necessity?: Database['public']['Enums']['necessity']
           archived?: boolean
+          import_batch?: string | null
           created_at?: string
         }
-        Relationships: [HouseholdRef<'categories_household_id_fkey'>]
+        Relationships: [
+          HouseholdRef<'categories_household_id_fkey'>,
+          HouseholdFk<'categories_household_id_import_batch_fkey', 'import_batch', 'import_batches', 'id'>,
+        ]
       }
       import_batches: {
         Row: {
@@ -110,6 +116,7 @@ export type Database = {
           file_name: string
           created_by: string | null
           created_at: string
+          month_settings_before: Json
         }
         Insert: {
           id?: string
@@ -117,6 +124,7 @@ export type Database = {
           file_name: string
           created_by?: string | null
           created_at?: string
+          month_settings_before?: Json
         }
         Update: {
           id?: string
@@ -124,6 +132,7 @@ export type Database = {
           file_name?: string
           created_by?: string | null
           created_at?: string
+          month_settings_before?: Json
         }
         Relationships: [HouseholdRef<'import_batches_household_id_fkey'>]
       }
@@ -383,6 +392,22 @@ export type Database = {
       }
     }
     Functions: {
+      import_workbook: {
+        Args: {
+          p_household_id: string
+          p_file_name: string
+          p_categories: Json
+          p_expenses: Json
+          p_incomes: Json
+          p_savings: Json
+          p_carry: Json
+        }
+        Returns: string
+      }
+      undo_import: {
+        Args: { p_batch_id: string }
+        Returns: undefined
+      }
       create_household: {
         Args: { p_name: string; p_display_name: string }
         Returns: string

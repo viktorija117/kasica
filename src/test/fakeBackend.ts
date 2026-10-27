@@ -6,7 +6,9 @@ import type { Session } from '../data/auth'
 import type { Category } from '../data/categories'
 import type { Expense, ExpenseInput, ExpenseSuggestion } from '../data/expenses'
 import type { Household, HouseholdMember } from '../data/households'
+import type { ImportBatch } from '../data/imports'
 import type { Income, IncomeInput } from '../data/incomes'
+import type { ImportPlan } from '../lib/excelImport'
 import type { MonthSetting, MonthSettingInput } from '../data/monthSettings'
 import type { MonthTotalsRow } from '../data/monthTotals'
 import type { Saving, SavingInput } from '../data/savings'
@@ -25,6 +27,7 @@ const state = {
   incomes: [] as Income[],
   savings: [] as Saving[],
   monthSettings: [] as MonthSetting[],
+  importBatches: [] as (ImportBatch & { carryMonths: string[]; settingsBefore: MonthSetting[] })[],
   nextId: 1,
   listeners: new Set<Listener>(),
 }
@@ -67,6 +70,7 @@ function makeCategory(sort: number, name: string, emoji: string): Category {
     monthly_limit: null,
     default_necessity: 'needed',
     archived: false,
+    import_batch: null,
     created_at: '2026-10-27T10:00:00Z',
   }
 }
@@ -256,6 +260,59 @@ export const fakeMonthSettings = {
   }),
 }
 
+// Same effect as the import_workbook / undo_import database functions.
+export const fakeImports = {
+  fetchImportBatches: vi.fn(async () =>
+    state.importBatches.map(({ id, file_name, created_at }) => ({ id, file_name, created_at })),
+  ),
+  importWorkbook: vi.fn(async (_householdId: string, fileName: string, plan: ImportPlan) => {
+    const batch = newId('batch')
+    const categoryIds = new Map<string, string>()
+    for (const category of plan.categories) {
+      const id = newId('cat')
+      categoryIds.set(category.key, id)
+      state.categories.push({
+        ...makeCategory(state.categories.length + 1, category.name, category.emoji),
+        id,
+        color: category.color,
+        default_necessity: category.default_necessity,
+        import_batch: batch,
+      })
+    }
+    for (const { category_id, category_key, ...expense } of plan.expenses) {
+      const input = { ...expense, category_id: category_id ?? categoryIds.get(category_key!)!, paid_by: null }
+      state.expenses.push({ ...makeExpense(newId('exp'), input, 'user-me'), import_batch: batch })
+    }
+    for (const income of plan.incomes) state.incomes.push({ ...makeIncome(income), import_batch: batch })
+    for (const saving of plan.savings) state.savings.push({ ...makeSaving(saving), import_batch: batch })
+    const carryMonths = plan.carry.map(({ month }) => month)
+    const settingsBefore = state.monthSettings
+      .filter((row) => carryMonths.includes(row.month))
+      .map((row) => ({ ...row }))
+    for (const { month, amount } of plan.carry) {
+      const row = state.monthSettings.find((setting) => setting.month === month)
+      if (row) row.carry_override = amount
+      else state.monthSettings.push({ household_id: HOUSEHOLD_ID, month, carry_enabled: true, carry_override: amount })
+    }
+    state.importBatches.unshift({ id: batch, file_name: fileName, created_at: new Date().toISOString(), carryMonths, settingsBefore })
+    return batch
+  }),
+  undoImport: vi.fn(async (batchId: string) => {
+    const batch = state.importBatches.find(({ id }) => id === batchId)!
+    const keep = <T extends { import_batch: string | null }>(rows: T[]) =>
+      rows.filter((row) => row.import_batch !== batchId)
+    state.monthSettings = [
+      ...state.monthSettings.filter((row) => !batch.carryMonths.includes(row.month)),
+      ...batch.settingsBefore,
+    ]
+    state.expenses = keep(state.expenses)
+    state.incomes = keep(state.incomes)
+    state.savings = keep(state.savings)
+    state.categories = keep(state.categories)
+    state.importBatches = state.importBatches.filter(({ id }) => id !== batchId)
+  }),
+}
+
 // Same sums as the month_totals view.
 export const fakeMonthTotals = {
   fetchMonthTotals: vi.fn(async () => {
@@ -293,6 +350,10 @@ export function seedSaving(input: SavingInput) {
   return saving
 }
 
+export function saveMonthSettingForTest(month: string, input: MonthSettingInput) {
+  state.monthSettings.push({ household_id: HOUSEHOLD_ID, month, ...input })
+}
+
 /** Adds an existing expense, as if one of the members had saved it earlier. */
 export function seedExpense(input: Partial<ExpenseInput> & Pick<ExpenseInput, 'date' | 'amount'>) {
   const expense = makeExpense(
@@ -315,6 +376,7 @@ export function resetBackend({ signedIn = false, withHousehold = false } = {}) {
   state.incomes = []
   state.savings = []
   state.monthSettings = []
+  state.importBatches = []
   state.nextId = 1
   if (withHousehold) {
     state.household = makeHousehold('Naša kuća')

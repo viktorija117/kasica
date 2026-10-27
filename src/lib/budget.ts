@@ -24,8 +24,8 @@ function fromPara(para: number): number {
   return para / 100
 }
 
-/** Money rounded to whole para, for results of a division. */
-function roundMoney(amount: number): number {
+/** Money rounded to whole para, for results of a division or numbers read from a file. */
+export function roundMoney(amount: number): number {
   return fromPara(Math.round(amount * 100)) || 0
 }
 
@@ -100,6 +100,26 @@ export function sumByDay(expenses: readonly Dated[], month: MonthKey): DayTotal[
     const date = `${prefix}${String(index + 1).padStart(2, '0')}`
     return { date, total: fromPara(byDay.get(date) ?? 0) }
   })
+}
+
+export type MonthCount = { month: MonthKey; count: number; total: number }
+
+/** Number and sum of entries per month, oldest month first; months without entries are left out. */
+export function sumByMonth(items: readonly Dated[]): MonthCount[] {
+  const byMonth = new Map<MonthKey, { count: number; para: number }>()
+  for (const item of items) {
+    const month = monthOfDate(item.date)
+    const current = byMonth.get(month) ?? { count: 0, para: 0 }
+    byMonth.set(month, { count: current.count + 1, para: current.para + toPara(item.amount) })
+  }
+  return [...byMonth.entries()]
+    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+    .map(([month, { count, para }]) => ({ month, count, total: fromPara(para) }))
+}
+
+/** True when two amounts are the same to the para (ignores floating point noise). */
+export function sameAmount(a: number, b: number): boolean {
+  return toPara(a) === toPara(b)
 }
 
 // --- carry-over chain --------------------------------------------------------------------
