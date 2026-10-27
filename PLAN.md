@@ -49,7 +49,8 @@ Donja navigacija: **Početna · Troškovi · [ + ] · Godina · Podešavanja**
 | Ekran | Šta sadrži |
 |---|---|
 | **Početna** (mesec) | Izbor meseca (← →). Kartice: Početno stanje, Potrošeno, Ušteđeno, Preostalo. Traka „iskorišćeno X%“. Danas potrošeno, prosečno dnevno, broj kupovina. **Novo:** „Možeš da trošiš još X dnevno do kraja meseca“, udeo bespotrebnog, poređenje sa prošlim mesecom. Potrošnja po kategorijama (udeo i traka do limita), potrošnja po danima (stubići), rečenica „Najviše trošite na …“ |
-| **+ Dodaj** | Donji panel: iznos (numerička tastatura) → kategorija (dugmići sa ikonicama) → opis sa predlozima iz istorije („voda“, „hleb“ odmah popune kategoriju) → datum (danas) → Potrebno/Bespotrebno → ko je platio. Čuvanje jednim dodirom, „Sačuvaj i dodaj još“ za račun iz prodavnice |
+| **+ Dodaj** | Donji panel: iznos (numerička tastatura) → kategorija (dugmići sa ikonicama) → opis sa predlozima iz istorije („voda“, „hleb“ odmah popune kategoriju) → datum (danas) → Potrebno/Bespotrebno → ko je platio. Čuvanje jednim dodirom, „Sačuvaj i dodaj još“ za račun iz prodavnice. Dugme **„Skeniraj račun“** (vidi dole) |
+| **Skeniranje računa** | Kamerom skeniraš QR kod sa fiskalnog računa i aplikacija sama ispiše sve stavke (naziv, količina, iznos), prodavnicu i datum. Na ekranu za proveru menjaš naziv, iznos, kategoriju i Potrebno/Bespotrebno za svaku stavku, brišeš ili spajaš stavke, pa sve sačuvaš jednim dodirom |
 | **Troškovi** | Lista po danima sa dnevnim zbirom, pretraga po opisu, filteri (kategorija, potrebno/bespotrebno, ko je platio), izmena, brisanje sa „Poništi“. Iznad liste: Prihodi i Štednja za mesec, sa dodavanjem |
 | **Godina** | Tabela svih meseci: početno stanje, potrošeno, ušteđeno, preostalo, najveća kategorija. Mesec × kategorija (tamnija boja = više para). Ukupno potrošeno, ukupno ušteđeno, prosečna mesečna potrošnja, najskuplji mesec, najveća kategorija u godini. Grafikon prihod / potrošnja / štednja po mesecima |
 | **Podešavanja** | Kategorije (naziv, ikonica, boja, redosled, mesečni limit, podrazumevano potrebno/bespotrebno, arhiviranje), ponavljajući troškovi, domaćinstvo i kod za poziv, uvoz iz Excela, izvoz u Excel, odjava |
@@ -63,6 +64,8 @@ Donja navigacija: **Početna · Troškovi · [ + ] · Godina · Podešavanja**
   Upišeš ih jednom, a svakog meseca se pojave kao „Za plaćanje“ i potvrdiš ih jednim dodirom.
 - **Limit po kategoriji** (npr. Brza hrana 15.000 mesečno) i upozorenje kad se približiš.
 - **Ko je platio:** vidi se koliko je ko potrošio.
+- **Skeniranje fiskalnog računa:** umesto da prepisuješ 15 stavki iz Maksija, skeniraš QR kod,
+  proveriš i sačuvaš. Kategorije se predlažu iz ranijih troškova sa istim nazivom.
 - Oboje unosite sa svojih telefona, a podaci se odmah sinhronizuju.
 
 **Kategorije na početku** (preuzete iz Excela, plus predlozi):
@@ -109,8 +112,12 @@ categories          id, household_id, name, emoji, color, sort int,
 expenses            id, household_id, date, category_id, description text,
                     amount numeric(12,2) CHECK (amount > 0),
                     necessity ('needed'|'unneeded'), paid_by uuid null, note text null,
-                    recurring_id uuid null, import_batch uuid null,
+                    recurring_id uuid null, import_batch uuid null, receipt_id uuid null,
                     created_by uuid, created_at, updated_at
+
+receipts            id, household_id, url text, store text, date, total numeric(12,2),
+                    created_by, created_at
+                    UNIQUE (household_id, url)   -- isti račun se ne može uneti dvaput
 
 incomes             id, household_id, date, source text, amount numeric(12,2),
                     received_by uuid null, note text null, import_batch uuid null, created_at
@@ -146,16 +153,18 @@ kasica/
 ├─ CLAUDE.md                pravila projekta (Claude ih čita sam)
 ├─ PLAN.md                  ovaj plan
 ├─ supabase/migrations/     SQL za tabele, RLS i funkcije
+├─ supabase/functions/      fiscal-receipt (čita stavke sa sajta Poreske uprave)
 ├─ public/icons/            ikonice aplikacije
 └─ src/
    ├─ i18n/  sr.ts
-   ├─ lib/   supabase.ts, dates.ts, money.ts, budget.ts (+ testovi), excelImport.ts (+ testovi)
+   ├─ lib/   supabase.ts, dates.ts, money.ts, budget.ts (+ testovi), excelImport.ts (+ testovi),
+   │         receipt.ts (+ testovi)
    ├─ data/  households.ts, categories.ts, expenses.ts, incomes.ts, savings.ts,
-   │         monthSettings.ts, recurring.ts
+   │         monthSettings.ts, recurring.ts, receipts.ts
    ├─ types/ database.ts
    ├─ components/  Layout, BottomNav, MonthSwitcher, AmountInput, CategoryPicker,
-   │               ExpenseSheet, StatCard, ProgressBar, UndoToast, ...
-   └─ pages/ Home, Expenses, Year, Settings, Login, Household, Import
+   │               ExpenseSheet, StatCard, ProgressBar, UndoToast, ReceiptScanner, ...
+   └─ pages/ Home, Expenses, Year, Settings, Login, Household, Import, ReceiptReview
 ```
 
 ---
@@ -332,9 +341,35 @@ Disney+.
 
 ---
 
-### Faza 9 — Izvoz, instalacija na telefon i objavljivanje
+### Faza 9 — Skeniranje računa
 **Poruka za Claude:**
-> Uradi Fazu 9 iz PLAN.md. 1) Izvoz u Excel za izabranu godinu: listovi Troškovi, Prihodi,
+> Uradi Fazu 9 iz PLAN.md. U ExpenseSheet dodaj dugme „Skeniraj račun“ koje otvara kameru i čita
+> QR kod sa srpskog fiskalnog računa (link ka suf.purs.gov.rs). Na laptopu omogući i da nalepim
+> link. Pošto pregledač ne može direktno da čita taj sajt, napravi Supabase Edge Function
+> `fiscal-receipt` koja prima link (samo suf.purs.gov.rs adrese, samo za prijavljene), preuzme
+> račun i vrati prodavnicu, datum, ukupan iznos i stavke (naziv, količina, jedinična cena, ukupno).
+> Prvo istraži tačan format tog sajta i reci mi šta si našao. Parsiranje teksta računa stavi u
+> src/lib/receipt.ts sa testovima (popusti, stavke sa količinom 0,5 kg, više poreskih stopa).
+> Ekran ReceiptReview: prodavnica i datum sa računa (mogu da se promene), ko je platio, pa lista
+> stavki gde za svaku mogu da promenim naziv, iznos, kategoriju i potrebno/bespotrebno, da je
+> izbacim ili da označim više stavki i spojim ih u jedan trošak. Kategorija i potrebno/bespotrebno
+> se predlažu iz poslednjeg troška sa sličnim opisom, inače iz kategorije koju izaberem za ceo
+> račun. Na dnu zbir izabranih stavki prema ukupnom iznosu sa računa. „Sačuvaj sve“ upisuje red u
+> receipts i sve troškove sa receipt_id. Ako je račun već unet, upozori me. Ako treba nova
+> biblioteka za čitanje QR koda, prvo me pitaj. Prvo plan.
+
+**Gotovo kada:**
+- skeniraš račun iz prodavnice telefonom i za par sekundi vidiš sve stavke
+- izmeniš kategoriju jednoj stavki, izbaciš jednu, spojiš dve, i sačuvaš
+- zbir sačuvanih troškova je jednak zbiru izabranih stavki
+- drugo skeniranje istog računa javlja da je već unet
+- račun bez QR koda i dalje može da se unese ručno
+
+---
+
+### Faza 10 — Izvoz, instalacija na telefon i objavljivanje
+**Poruka za Claude:**
+> Uradi Fazu 10 iz PLAN.md. 1) Izvoz u Excel za izabranu godinu: listovi Troškovi, Prihodi,
 > Štednja, Pregled po mesecima. 2) vite-plugin-pwa: manifest (naziv Kasica, boje, ikonice 192,
 > 512 i maskable), service worker koji kešira osnovni izgled, i jednostavna ikonica kasice.
 > 3) Supabase Realtime za expenses, incomes i savings, da se trošak koji doda jedno od nas
@@ -352,12 +387,12 @@ a izvezeni Excel se otvara i brojevi se slažu.
 
 ---
 
-### Faza 10 — Doterivanje (po želji, kasnije)
+### Faza 11 — Doterivanje (po želji, kasnije)
 Ideje kad osnovno proradi, svaka kao posebna mala faza:
 - ciljevi štednje (npr. „Letovanje 150.000“) sa trakom napretka
 - prikaz u evrima po kursu koji upišeš
 - obaveštenje kad pređete limit kategorije ili kad stiže račun
-- slikanje fiskalnog računa (QR kod sa računa automatski popuni stavke)
+- čitanje računa bez QR koda sa slike (prepoznavanje teksta)
 - „Šta je novo“: koliko ste ove nedelje potrošili na bespotrebno u odnosu na prošlu
 - dugme za brz unos čestih stvari (voda, hleb, gorivo) na Početnoj
 - engleski jezik (tekstovi su već u sr.ts)

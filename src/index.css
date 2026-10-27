@@ -14,6 +14,8 @@
   --primary-hover: #187560;
   --primary-soft: #dcefe8;
   --on-primary: #ffffff;
+  --danger: #c0392b;
+  --danger-soft: #fbe5e1;
   --backdrop: rgb(20 26 24 / 0.45);
 }
 
@@ -29,6 +31,8 @@
     --primary-hover: #5ccfae;
     --primary-soft: #1d3a32;
     --on-primary: #0b1a16;
+    --danger: #ff8a7a;
+    --danger-soft: #3a1f1b;
     --backdrop: rgb(0 0 0 / 0.6);
   }
 }
@@ -44,6 +48,8 @@
   --color-primary-hover: var(--primary-hover);
   --color-primary-soft: var(--primary-soft);
   --color-on-primary: var(--on-primary);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
   --color-backdrop: var(--backdrop);
 
   --font-sans:
