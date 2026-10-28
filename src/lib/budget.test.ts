@@ -16,7 +16,10 @@ import {
   sumByPayer,
   topCategory,
   withMonthTotals,
+  yearChartData,
+  yearOverview,
   type CarrySetting,
+  type CategoryMonthTotals,
   type MonthTotals,
 } from './budget'
 
@@ -500,5 +503,140 @@ describe('sumByPayer', () => {
 
   it('shows members with 0 for an empty month', () => {
     expect(sumByPayer([], ['me'])).toEqual([{ payerId: 'me', total: 0, share: 0 }])
+  })
+})
+
+describe('yearOverview', () => {
+  const categories = [
+    { id: 'hrana', archived: false },
+    { id: 'higijena', archived: true },
+    { id: 'brza', archived: false },
+  ]
+
+  function cat(month: string, category_id: string, spent: number, unneeded = 0): CategoryMonthTotals {
+    return { month, category_id, spent, unneeded }
+  }
+
+  // Dec 2025: 10.000 left. 2026: Jan, Feb and Oct have entries, today is 27 Oct 2026.
+  const input = {
+    year: 2026,
+    today: '2026-10-27',
+    categories,
+    settings: [] as CarrySetting[],
+    totals: [
+      totals('2025-12-01', 50000, 40000),
+      totals('2026-01-01', 100000, 60000.5, 10000),
+      totals('2026-02-01', 100000, 80000, -5000),
+      totals('2026-10-01', 90000, 30000),
+    ],
+    categoryTotals: [
+      cat('2025-12-01', 'hrana', 40000),
+      cat('2026-01-01', 'hrana', 50000.25),
+      cat('2026-01-01', 'higijena', 10000.25, 10000.25),
+      cat('2026-02-01', 'brza', 30000, 30000),
+      cat('2026-02-01', 'hrana', 50000),
+      cat('2026-10-01', 'higijena', 30000),
+    ],
+  }
+
+  it('gives all 12 months with the same carry chain as Home', () => {
+    const overview = yearOverview(input)
+    expect(overview.months.map((m) => m.month)).toEqual(
+      Array.from({ length: 12 }, (_, i) => `2026-${String(i + 1).padStart(2, '0')}-01`),
+    )
+    const [jan, feb, mar] = overview.months
+    expect(jan.balance).toEqual(monthBalance(input.totals, [], '2026-01-01'))
+    expect(jan.balance.carryIn).toBe(10000)
+    expect(jan.balance.remaining).toBe(39999.5)
+    expect(feb.balance.remaining).toBe(39999.5 + 100000 - 80000 + 5000)
+    // March has no entries but carries February's remaining, so it is shown.
+    expect(mar.shown).toBe(true)
+    expect(mar.balance.opening).toBe(feb.balance.remaining)
+    expect(overview.months[9].balance).toEqual(monthBalance(input.totals, [], '2026-10-01'))
+  })
+
+  it('hides future months without entries', () => {
+    const overview = yearOverview(input)
+    expect(overview.months[9].shown).toBe(true)
+    expect(overview.months[10].shown).toBe(false)
+    expect(overview.months[11].shown).toBe(false)
+  })
+
+  it('hides months before the first data and keeps them at zero', () => {
+    const overview = yearOverview({ ...input, year: 2025 })
+    expect(overview.months[0].shown).toBe(false)
+    expect(overview.months[0].balance.opening).toBe(0)
+    expect(overview.months[11].shown).toBe(true)
+    expect(overview.total.remaining).toBe(10000)
+  })
+
+  it('has a column for every category with spending, archived included, in category order', () => {
+    const overview = yearOverview(input)
+    expect(overview.categories.map((c) => c.categoryId)).toEqual(['hrana', 'higijena', 'brza'])
+    expect(overview.categories[1].category).toBe(categories[1])
+    expect(overview.categories.map((c) => c.total)).toEqual([100000.25, 40000.25, 30000])
+  })
+
+  it('cells of a month add up to its spending and the columns to the year total', () => {
+    const overview = yearOverview(input)
+    for (const month of overview.months) {
+      expect(sumAmounts(month.cells.map((cell) => ({ amount: cell.total })))).toBe(month.balance.spent)
+    }
+    expect(sumAmounts(overview.categories.map((c) => ({ amount: c.total })))).toBe(overview.total.spent)
+  })
+
+  it('colours each cell against the biggest month of its category', () => {
+    const [jan, , , , , , , , , oct] = yearOverview(input).months
+    expect(jan.cells[1].intensity).toBeCloseTo(10000.25 / 30000)
+    expect(oct.cells[1].intensity).toBe(1)
+    expect(oct.cells[0]).toEqual({ categoryId: 'hrana', total: 0, intensity: 0 })
+  })
+
+  it('finds the top category of each month', () => {
+    const overview = yearOverview(input)
+    expect(overview.months[1].top?.categoryId).toBe('hrana')
+    expect(overview.months[2].top).toBeNull()
+  })
+
+  it('sums the year: totals, average over months with spending, top month and category, unneeded', () => {
+    const overview = yearOverview(input)
+    expect(overview.total).toEqual({
+      opening: 10000 + 290000,
+      income: 290000,
+      spent: 170000.5,
+      saved: 5000,
+      remaining: overview.months[9].balance.remaining,
+    })
+    // Only Jan, Feb and Oct have expenses.
+    expect(overview.avgMonthlySpent).toBe(56666.83)
+    expect(overview.monthsWithSpending).toBe(3)
+    expect(overview.topMonth).toEqual({ month: '2026-02-01', spent: 80000 })
+    expect(overview.topCategory?.categoryId).toBe('hrana')
+    expect(overview.unneeded).toBe(40000.25)
+    expect(overview.unneededPct).toBeCloseTo(40000.25 / 170000.5)
+  })
+
+  it('a carry set by hand mid-year wins, like on Home', () => {
+    const settings = [setting('2026-02-01', { carry_override: 1000 })]
+    const overview = yearOverview({ ...input, settings })
+    expect(overview.months[1].balance.carryIn).toBe(1000)
+    expect(overview.months[1].balance).toEqual(monthBalance(input.totals, settings, '2026-02-01'))
+  })
+
+  it('is empty for a year without data', () => {
+    const overview = yearOverview({ ...input, year: 2030 })
+    expect(overview.months.every((m) => !m.shown)).toBe(true)
+    expect(overview.hasData).toBe(false)
+    expect(overview.categories).toEqual([])
+    expect(overview.avgMonthlySpent).toBeNull()
+    expect(overview.topMonth).toBeNull()
+    expect(overview.topCategory).toBeNull()
+    expect(overview.unneededPct).toBe(0)
+  })
+
+  it('gives the chart income, spending and savings per month', () => {
+    const points = yearChartData(yearOverview(input))
+    expect(points).toHaveLength(12)
+    expect(points[1]).toEqual({ month: '2026-02-01', income: 100000, spent: 80000, saved: -5000 })
   })
 })

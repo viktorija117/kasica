@@ -477,3 +477,191 @@ export function sumByPayer(
     .sort(([a], [b]) => rank(a) - rank(b))
     .map(([payerId, para]) => ({ payerId, total: fromPara(para), share: ratio(para, all) }))
 }
+
+// --- year overview -----------------------------------------------------------------------
+
+/** Spending of one category in one month, as the `month_category_totals` view returns it. */
+export type CategoryMonthTotals = {
+  month: MonthKey
+  category_id: string
+  spent: number
+  /** Part of `spent` marked unneeded. */
+  unneeded: number
+}
+
+export type YearMonth = {
+  month: MonthKey
+  balance: MonthBalance
+  /**
+   * False for a month with nothing to show: no entries and nothing carried in, or a future
+   * month without entries (its carry would only repeat today's balance).
+   */
+  shown: boolean
+  /** Spending per category of this month, in the order of `YearOverview.categories`. */
+  cells: YearCell[]
+  top: CategoryTotal | null
+}
+
+export type YearCell = {
+  categoryId: string
+  total: number
+  /** total / the biggest month of this category, 0–1; drives the colour of the cell. */
+  intensity: number
+}
+
+export type YearCategory<C> = {
+  categoryId: string
+  /** Undefined when the expenses point at a category that is not in the list. */
+  category: C | undefined
+  total: number
+  /** Part of the year's spending, 0–1. */
+  share: number
+}
+
+export type YearOverview<C> = {
+  year: number
+  /** Always the 12 months, January first. */
+  months: YearMonth[]
+  /** At least one month is shown. */
+  hasData: boolean
+  /** Every category with spending in the year (archived ones too), in the categories' order. */
+  categories: YearCategory<C>[]
+  /** The "UKUPNO" row. */
+  total: {
+    /** What January carried in + the incomes of the year. */
+    opening: number
+    income: number
+    spent: number
+    saved: number
+    /** "Preostalo" of the last shown month. */
+    remaining: number
+  }
+  /** Average spending of the months that have expenses, null when none has. */
+  avgMonthlySpent: number | null
+  monthsWithSpending: number
+  /** The month with the most spending, null when nothing was spent. */
+  topMonth: { month: MonthKey; spent: number } | null
+  topCategory: YearCategory<C> | null
+  unneeded: number
+  /** Unneeded part of the year's spending, 0–1. */
+  unneededPct: number
+}
+
+/**
+ * Everything the Year screen shows. Month balances come from the same carry chain as Home,
+ * so every month agrees with Home for that month. `categoryTotals` must be summed from the
+ * same expenses as `totals`, so each month's cells add up to its `spent`.
+ */
+export function yearOverview<C extends { id: string }>(input: {
+  year: number
+  totals: readonly MonthTotals[]
+  settings: readonly CarrySetting[]
+  categoryTotals: readonly CategoryMonthTotals[]
+  categories: readonly C[]
+  today: DateKey
+}): YearOverview<C> {
+  const { year, totals, settings, categories, today } = input
+  const first: MonthKey = `${year}-01-01`
+  const monthKeys = Array.from({ length: 12 }, (_, index) => shiftMonth(first, index))
+  const rows = input.categoryTotals.filter((row) => monthKeys.includes(row.month))
+
+  const chain = new Map(balanceChain(totals, settings, monthKeys[11]).map((b) => [b.month, b]))
+  const balances = monthKeys.map((month) => chain.get(month) ?? balanceOf(month, undefined, undefined, null))
+
+  // Category columns: every category with spending, in the household's order.
+  const byCategory = new Map<string, number>()
+  let spentPara = 0
+  let unneededPara = 0
+  for (const row of rows) {
+    const para = toPara(row.spent)
+    byCategory.set(row.category_id, (byCategory.get(row.category_id) ?? 0) + para)
+    spentPara += para
+    unneededPara += toPara(row.unneeded)
+  }
+  const position = new Map(categories.map((category, index) => [category.id, index]))
+  const columns: YearCategory<C>[] = [...byCategory.entries()]
+    .sort(
+      ([a], [b]) =>
+        (position.get(a) ?? Infinity) - (position.get(b) ?? Infinity) || a.localeCompare(b),
+    )
+    .map(([categoryId, para]) => ({
+      categoryId,
+      category: categories.find((category) => category.id === categoryId),
+      total: fromPara(para),
+      share: ratio(para, spentPara),
+    }))
+
+  const cellPara = (month: MonthKey, categoryId: string) =>
+    rows
+      .filter((row) => row.month === month && row.category_id === categoryId)
+      .reduce((sum, row) => sum + toPara(row.spent), 0)
+  const columnMax = new Map(
+    columns.map(({ categoryId }) => [
+      categoryId,
+      Math.max(...monthKeys.map((month) => cellPara(month, categoryId))),
+    ]),
+  )
+
+  const months: YearMonth[] = balances.map((balance) => {
+    const cells = columns.map(({ categoryId }) => {
+      const para = cellPara(balance.month, categoryId)
+      return { categoryId, total: fromPara(para), intensity: ratio(para, columnMax.get(categoryId) ?? 0) }
+    })
+    const future = monthPhase(balance.month, today) === 'future'
+    return {
+      month: balance.month,
+      balance,
+      shown: balance.hasData || (!future && balance.carryIn !== 0),
+      cells,
+      top: topCategory(sumByCategory(rows.filter((row) => row.month === balance.month).map(asExpense))),
+    }
+  })
+
+  const shown = months.filter((month) => month.shown)
+  const withSpending = balances.filter((balance) => balance.spent !== 0)
+  const sumOf = (field: 'income' | 'spent' | 'saved') =>
+    fromPara(balances.reduce((sum, balance) => sum + toPara(balance[field]), 0))
+  const income = sumOf('income')
+  const topMonth = withSpending.reduce<MonthBalance | null>(
+    (best, balance) => (best === null || balance.spent > best.spent ? balance : best),
+    null,
+  )
+  const largest = [...columns].sort((a, b) => b.total - a.total)[0]
+
+  return {
+    year,
+    months,
+    hasData: shown.length > 0,
+    categories: columns,
+    total: {
+      opening: fromPara(toPara(balances[0].carryIn) + toPara(income)),
+      income,
+      spent: sumOf('spent'),
+      saved: sumOf('saved'),
+      remaining: shown.length > 0 ? shown[shown.length - 1].balance.remaining : 0,
+    },
+    avgMonthlySpent:
+      withSpending.length > 0 ? roundMoney(sumOf('spent') / withSpending.length) : null,
+    monthsWithSpending: withSpending.length,
+    topMonth: topMonth && topMonth.spent > 0 ? { month: topMonth.month, spent: topMonth.spent } : null,
+    topCategory: largest && largest.total > 0 ? largest : null,
+    unneeded: fromPara(unneededPara),
+    unneededPct: ratio(unneededPara, spentPara),
+  }
+}
+
+function asExpense(row: CategoryMonthTotals) {
+  return { category_id: row.category_id, amount: row.spent }
+}
+
+export type YearChartPoint = { month: MonthKey; income: number; spent: number; saved: number }
+
+/** Incomes, spending and savings of every month, for the Year chart. */
+export function yearChartData(overview: YearOverview<unknown>): YearChartPoint[] {
+  return overview.months.map(({ month, balance }) => ({
+    month,
+    income: balance.income,
+    spent: balance.spent,
+    saved: balance.saved,
+  }))
+}

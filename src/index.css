@@ -19,6 +19,11 @@
   --warning: #e07a10;
   --accent: #6c5ce7;
   --backdrop: rgb(20 26 24 / 0.45);
+
+  /* Chart series (validated for colour-blind separation). */
+  --chart-income: #2a78d6;
+  --chart-spent: #eb6834;
+  --chart-saved: #1baf7a;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -38,6 +43,10 @@
     --warning: #ffb05c;
     --accent: #a99cf5;
     --backdrop: rgb(0 0 0 / 0.6);
+
+    --chart-income: #3987e5;
+    --chart-spent: #d95926;
+    --chart-saved: #199e70;
   }
 }
 

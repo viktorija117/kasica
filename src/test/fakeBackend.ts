@@ -10,6 +10,7 @@ import type { ImportBatch } from '../data/imports'
 import type { Income, IncomeInput } from '../data/incomes'
 import type { ImportPlan } from '../lib/excelImport'
 import type { MonthSetting, MonthSettingInput } from '../data/monthSettings'
+import type { MonthCategoryTotalsRow } from '../data/monthCategoryTotals'
 import type { MonthTotalsRow } from '../data/monthTotals'
 import type { Saving, SavingInput } from '../data/savings'
 
@@ -352,6 +353,29 @@ export const fakeMonthTotals = {
     state.expenses.forEach((row) => add(row.date, 'spent', row.amount))
     state.savings.forEach((row) => add(row.date, 'saved', row.amount))
     return [...byMonth.values()].sort((a, b) => a.month.localeCompare(b.month))
+  }),
+}
+
+// Same sums as the month_category_totals view.
+export const fakeMonthCategoryTotals = {
+  fetchMonthCategoryTotals: vi.fn(async (_householdId: string, year: number) => {
+    const byKey = new Map<string, MonthCategoryTotalsRow>()
+    for (const expense of state.expenses) {
+      if (expense.date.slice(0, 4) !== String(year)) continue
+      const month = `${expense.date.slice(0, 7)}-01`
+      const key = `${month}|${expense.category_id}`
+      const row = byKey.get(key) ?? {
+        household_id: HOUSEHOLD_ID,
+        month,
+        category_id: expense.category_id,
+        spent: 0,
+        unneeded: 0,
+      }
+      row.spent = Math.round((row.spent + expense.amount) * 100) / 100
+      if (expense.necessity === 'unneeded') row.unneeded = Math.round((row.unneeded + expense.amount) * 100) / 100
+      byKey.set(key, row)
+    }
+    return [...byKey.values()].sort((a, b) => a.month.localeCompare(b.month))
   }),
 }
 

@@ -12,6 +12,9 @@ export const queryKeys = {
   allSavings: (householdId: string) => ['savings', householdId] as const,
   savings: (householdId: string, month: string) => ['savings', householdId, month] as const,
   monthTotals: (householdId: string) => ['month-totals', householdId] as const,
+  /** Under `monthTotals`, so every change that refreshes the month sums refreshes these too. */
+  monthCategoryTotals: (householdId: string, year: number) =>
+    ['month-totals', householdId, 'categories', year] as const,
   monthSettings: (householdId: string) => ['month-settings', householdId] as const,
   importBatches: (householdId: string) => ['import-batches', householdId] as const,
 }

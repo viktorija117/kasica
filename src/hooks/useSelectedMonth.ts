@@ -29,3 +29,8 @@ export function useSelectedMonth(): [MonthKey, (month: MonthKey) => void] {
 
   return [month, setMonth]
 }
+
+/** Link to the Home screen of `month`. */
+export function homePath(month: MonthKey): string {
+  return month === currentMonthKey() ? '/' : `/?${MONTH_PARAM}=${monthKeyToParam(month)}`
+}

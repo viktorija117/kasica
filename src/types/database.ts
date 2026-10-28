@@ -379,6 +379,16 @@ export type Database = {
         }
         Relationships: []
       }
+      month_category_totals: {
+        Row: {
+          household_id: string
+          month: string
+          category_id: string
+          spent: number
+          unneeded: number
+        }
+        Relationships: []
+      }
       month_totals: {
         Row: {
           household_id: string
