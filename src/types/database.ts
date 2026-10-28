@@ -408,6 +408,10 @@ export type Database = {
         Args: { p_batch_id: string }
         Returns: undefined
       }
+      reorder_categories: {
+        Args: { p_household_id: string; p_ids: string[] }
+        Returns: undefined
+      }
       create_household: {
         Args: { p_name: string; p_display_name: string }
         Returns: string

@@ -1,6 +1,6 @@
 import { Link } from 'react-router'
 import { Button } from '../components/Button'
-import { CategoryList } from '../components/CategoryList'
+import { CategoryManager } from '../components/CategoryManager'
 import { InviteCode } from '../components/InviteCode'
 import { MembersList } from '../components/MembersList'
 import { PageTitle } from '../components/PageTitle'
@@ -39,7 +39,7 @@ export function Settings() {
 
       <SettingsSection title={sr.settings.categories}>
         {categories.data ? (
-          <CategoryList categories={categories.data} />
+          <CategoryManager categories={categories.data} />
         ) : (
           <QueryStatus error={categories.error} />
         )}

@@ -1,15 +1,20 @@
 import {
   balanceChain,
+  categoryBreakdown,
   compareWithPrevious,
+  limitStatus,
   groupByDay,
   monthBalance,
   monthSummary,
   monthTotalsOf,
   sameAmount,
+  splitByNecessity,
   sumAmounts,
   sumByCategory,
   sumByDay,
   sumByMonth,
+  sumByPayer,
+  topCategory,
   withMonthTotals,
   type CarrySetting,
   type MonthTotals,
@@ -382,5 +387,118 @@ describe('sameAmount', () => {
   it('compares to the para', () => {
     expect(sameAmount(0.1 + 0.2, 0.3)).toBe(true)
     expect(sameAmount(10396, 10396.01)).toBe(false)
+  })
+})
+
+describe('limitStatus', () => {
+  it('is none without a limit', () => {
+    expect(limitStatus(5000, null)).toBe('none')
+  })
+
+  it('warns from 80% and is over only above 100%', () => {
+    expect(limitStatus(11999.99, 15000)).toBe('ok')
+    expect(limitStatus(12000, 15000)).toBe('warning')
+    expect(limitStatus(15000, 15000)).toBe('warning')
+    expect(limitStatus(15000.01, 15000)).toBe('over')
+  })
+})
+
+describe('categoryBreakdown', () => {
+  const categories = [
+    { id: 'food', monthly_limit: null, archived: false },
+    { id: 'fast', monthly_limit: 15000, archived: false },
+    { id: 'old', monthly_limit: null, archived: true },
+    { id: 'trips', monthly_limit: 50000, archived: false },
+    { id: 'gone', monthly_limit: 1000, archived: true },
+  ]
+  const rows = [
+    { amount: 69.99, category_id: 'food' },
+    { amount: 12500.01, category_id: 'fast' },
+    { amount: 1200.5, category_id: 'old' },
+    { amount: 0.01, category_id: 'missing' },
+    { amount: 3000, category_id: 'food' },
+  ]
+
+  it('adds up exactly to the spending of the month, archived and unknown categories included', () => {
+    const breakdown = categoryBreakdown(rows, categories)
+    expect(sumAmounts(breakdown.map((row) => ({ amount: row.total })))).toBe(sumAmounts(rows))
+    expect(breakdown.reduce((sum, row) => sum + row.share, 0)).toBeCloseTo(1, 10)
+  })
+
+  it('shows spending against the limit with its status', () => {
+    const [fast] = categoryBreakdown(rows, categories)
+    expect(fast).toMatchObject({ categoryId: 'fast', total: 12500.01, limit: 15000, status: 'warning' })
+    expect(fast.limitUsed).toBeCloseTo(0.8333, 4)
+  })
+
+  it('keeps archived categories that have spending and unknown ones without a category', () => {
+    const breakdown = categoryBreakdown(rows, categories)
+    expect(breakdown.find((row) => row.categoryId === 'old')?.category?.archived).toBe(true)
+    expect(breakdown.find((row) => row.categoryId === 'missing')?.category).toBeUndefined()
+  })
+
+  it('lists active categories with a limit but no spending last, archived ones not at all', () => {
+    const breakdown = categoryBreakdown(rows, categories)
+    expect(breakdown.map((row) => row.categoryId)).toEqual(['fast', 'food', 'old', 'missing', 'trips'])
+    expect(breakdown.at(-1)).toMatchObject({ total: 0, share: 0, limitUsed: 0, status: 'ok' })
+  })
+
+  it('is empty for an empty month without limits', () => {
+    expect(categoryBreakdown([], [{ id: 'food', monthly_limit: null, archived: false }])).toEqual([])
+  })
+})
+
+describe('topCategory', () => {
+  it('is the biggest category', () => {
+    expect(topCategory(sumByCategory([{ amount: 5, category_id: 'a' }, { amount: 9, category_id: 'b' }]))).toMatchObject({
+      categoryId: 'b',
+      total: 9,
+    })
+  })
+
+  it('is null when nothing was spent', () => {
+    expect(topCategory([])).toBeNull()
+    expect(
+      topCategory(categoryBreakdown([], [{ id: 'a', monthly_limit: 100, archived: false }])),
+    ).toBeNull()
+  })
+})
+
+describe('splitByNecessity', () => {
+  it('splits spending into needed and unneeded', () => {
+    const split = splitByNecessity([
+      expense('2026-10-01', 600.1),
+      expense('2026-10-02', 199.95, 'unneeded'),
+      expense('2026-10-03', 199.95, 'unneeded'),
+    ])
+    expect(split).toEqual({ needed: 600.1, unneeded: 399.9, neededShare: 0.6001, unneededShare: 0.3999 })
+  })
+
+  it('is all zeros without expenses', () => {
+    expect(splitByNecessity([])).toEqual({ needed: 0, unneeded: 0, neededShare: 0, unneededShare: 0 })
+  })
+})
+
+describe('sumByPayer', () => {
+  it('lists members in order, then former members, then expenses without a payer', () => {
+    const rows = [
+      { amount: 100.5, paid_by: 'partner' },
+      { amount: 50, paid_by: null },
+      { amount: 49.5, paid_by: 'former' },
+      { amount: 300, paid_by: 'partner' },
+    ]
+    const payers = sumByPayer(rows, ['me', 'partner'])
+    expect(payers.map(({ payerId, total }) => [payerId, total])).toEqual([
+      ['me', 0],
+      ['partner', 400.5],
+      ['former', 49.5],
+      [null, 50],
+    ])
+    expect(sumAmounts(payers.map((row) => ({ amount: row.total })))).toBe(sumAmounts(rows))
+    expect(payers[1].share).toBeCloseTo(0.801, 10)
+  })
+
+  it('shows members with 0 for an empty month', () => {
+    expect(sumByPayer([], ['me'])).toEqual([{ payerId: 'me', total: 0, share: 0 }])
   })
 })

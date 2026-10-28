@@ -3,7 +3,7 @@
 //   vi.mock('../data/auth', async () => (await import('../test/fakeBackend')).fakeAuth)
 // It must not import any app module, or the mock factories would import themselves.
 import type { Session } from '../data/auth'
-import type { Category } from '../data/categories'
+import type { Category, CategoryInput, CategoryPatch } from '../data/categories'
 import type { Expense, ExpenseInput, ExpenseSuggestion } from '../data/expenses'
 import type { Household, HouseholdMember } from '../data/households'
 import type { ImportBatch } from '../data/imports'
@@ -169,7 +169,24 @@ export const fakeHouseholds = {
 }
 
 export const fakeCategories = {
-  fetchCategories: vi.fn(async () => state.categories),
+  fetchCategories: vi.fn(async () =>
+    [...state.categories].sort((a, b) => a.sort - b.sort || a.name.localeCompare(b.name)),
+  ),
+  createCategory: vi.fn(async (_householdId: string, input: CategoryInput & { sort: number }) => {
+    const category: Category = { ...makeCategory(input.sort, input.name, input.emoji ?? '📦'), ...input, id: newId('cat') }
+    state.categories.push(category)
+    return category
+  }),
+  updateCategory: vi.fn(async (id: string, patch: CategoryPatch) => {
+    const index = state.categories.findIndex((category) => category.id === id)
+    state.categories[index] = { ...state.categories[index], ...patch }
+    return state.categories[index]
+  }),
+  reorderCategories: vi.fn(async (_householdId: string, ids: string[]) => {
+    state.categories = state.categories.map((category) =>
+      ids.includes(category.id) ? { ...category, sort: ids.indexOf(category.id) + 1 } : category,
+    )
+  }),
 }
 
 export const fakeExpenses = {

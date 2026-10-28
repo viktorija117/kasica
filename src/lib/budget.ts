@@ -360,3 +360,120 @@ export function compareWithPrevious(
     throughDay,
   }
 }
+
+// --- spending breakdowns -----------------------------------------------------------------
+
+/** From this part of a monthly limit on, the category shows a warning. */
+export const LIMIT_WARNING_AT = 0.8
+
+/** `none` without a limit; `warning` from 80% of the limit; `over` above 100%. */
+export type LimitStatus = 'none' | 'ok' | 'warning' | 'over'
+
+export function limitStatus(spent: number, limit: number | null): LimitStatus {
+  if (limit === null || limit <= 0) return 'none'
+  const used = toPara(spent) / toPara(limit)
+  return used > 1 ? 'over' : used >= LIMIT_WARNING_AT ? 'warning' : 'ok'
+}
+
+type LimitedCategory = { id: string; monthly_limit: number | null; archived: boolean }
+
+export type CategorySpending<C> = CategoryTotal & {
+  /** Undefined when the expense points at a category that is not in the list. */
+  category: C | undefined
+  limit: number | null
+  /** total / limit (above 1 when over), null without a limit. */
+  limitUsed: number | null
+  status: LimitStatus
+}
+
+/**
+ * Spending per category for the Home screen, biggest first. Every expense is counted once,
+ * so the totals always add up to "Potrošeno" (archived categories included). Active
+ * categories with a limit but no spending yet follow at the end, so their limit is visible.
+ */
+export function categoryBreakdown<C extends LimitedCategory>(
+  expenses: readonly (HasAmount & { category_id: string })[],
+  categories: readonly C[],
+): CategorySpending<C>[] {
+  const byId = new Map(categories.map((category) => [category.id, category]))
+  const withLimit = (categoryId: string, total: number, share: number): CategorySpending<C> => {
+    const category = byId.get(categoryId)
+    const limit = category?.monthly_limit ?? null
+    return {
+      categoryId,
+      total,
+      share,
+      category,
+      limit,
+      limitUsed: limit === null ? null : ratio(toPara(total), toPara(limit)),
+      status: limitStatus(total, limit),
+    }
+  }
+
+  const spent = sumByCategory(expenses).map((row) => withLimit(row.categoryId, row.total, row.share))
+  const seen = new Set(spent.map((row) => row.categoryId))
+  const unspent = categories
+    .filter((category) => !category.archived && category.monthly_limit !== null && !seen.has(category.id))
+    .map((category) => withLimit(category.id, 0, 0))
+  return [...spent, ...unspent]
+}
+
+/** The category with the most spending, or null when nothing was spent. */
+export function topCategory<T extends CategoryTotal>(breakdown: readonly T[]): T | null {
+  const top = breakdown[0]
+  return top && top.total > 0 ? top : null
+}
+
+export type NecessitySplit = {
+  needed: number
+  unneeded: number
+  /** Parts of all spending, 0–1. */
+  neededShare: number
+  unneededShare: number
+}
+
+/** "Potrebno" against "Bespotrebno". */
+export function splitByNecessity(expenses: readonly SpendingRow[]): NecessitySplit {
+  let needed = 0
+  let unneeded = 0
+  for (const expense of expenses) {
+    if (expense.necessity === 'unneeded') unneeded += toPara(expense.amount)
+    else needed += toPara(expense.amount)
+  }
+  return {
+    needed: fromPara(needed),
+    unneeded: fromPara(unneeded),
+    neededShare: ratio(needed, needed + unneeded),
+    unneededShare: ratio(unneeded, needed + unneeded),
+  }
+}
+
+export type PayerTotal = {
+  /** null for expenses without `paid_by`. */
+  payerId: string | null
+  total: number
+  share: number
+}
+
+/**
+ * "Ko je koliko platio": every member in `memberIds` order (0 when they paid nothing), then
+ * people who are no longer members, then expenses without a payer. Adds up to the sum of
+ * the list.
+ */
+export function sumByPayer(
+  expenses: readonly (HasAmount & { paid_by: string | null })[],
+  memberIds: readonly string[],
+): PayerTotal[] {
+  const byPayer = new Map<string | null, number>(memberIds.map((id) => [id, 0]))
+  let all = 0
+  for (const expense of expenses) {
+    const para = toPara(expense.amount)
+    byPayer.set(expense.paid_by, (byPayer.get(expense.paid_by) ?? 0) + para)
+    all += para
+  }
+  const rank = (id: string | null) => (id === null ? 2 : memberIds.includes(id) ? 0 : 1)
+  return [...byPayer.entries()]
+    .filter(([id, para]) => para > 0 || (id !== null && memberIds.includes(id)))
+    .sort(([a], [b]) => rank(a) - rank(b))
+    .map(([payerId, para]) => ({ payerId, total: fromPara(para), share: ratio(para, all) }))
+}

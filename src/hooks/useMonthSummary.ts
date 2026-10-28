@@ -10,16 +10,21 @@ import {
 import { fetchMonthTotals } from '../data/monthTotals'
 import { sr } from '../i18n/sr'
 import {
+  categoryBreakdown,
   compareWithPrevious,
   monthBalance,
   monthSummary,
   monthTotalsOf,
+  splitByNecessity,
+  sumByDay,
+  sumByPayer,
+  topCategory,
   withMonthTotals,
 } from '../lib/budget'
 import { shiftMonth, todayKey, type MonthKey } from '../lib/dates'
 import { queryKeys } from '../lib/queryKeys'
 import { useExpenses } from './useExpenses'
-import { useHousehold } from './useHousehold'
+import { useCategories, useHousehold, useMembers } from './useHousehold'
 import { useIncomes } from './useIncomes'
 import { useSavings } from './useSavings'
 import { useToast } from './useToast'
@@ -75,13 +80,24 @@ export function useSaveMonthSetting() {
 export function useMonthSummary(month: MonthKey) {
   const totals = useMonthTotals()
   const settings = useMonthSettings()
+  const categories = useCategories()
+  const members = useMembers()
   const { expenses, error: expensesError } = useExpenses(month)
   const { expenses: previousExpenses, error: previousError } = useExpenses(shiftMonth(month, -1))
   const { incomes, error: incomesError } = useIncomes(month)
   const { savings, error: savingsError } = useSavings(month)
 
   const data = useMemo(() => {
-    if (!totals.data || !settings.data || !expenses || !previousExpenses || !incomes || !savings) {
+    if (
+      !totals.data ||
+      !settings.data ||
+      !categories.data ||
+      !members.data ||
+      !expenses ||
+      !previousExpenses ||
+      !incomes ||
+      !savings
+    ) {
       return undefined
     }
     const today = todayKey()
@@ -91,14 +107,42 @@ export function useMonthSummary(month: MonthKey) {
     const setting: MonthSettingInput = saved
       ? { carry_enabled: saved.carry_enabled, carry_override: saved.carry_override }
       : DEFAULT_MONTH_SETTING
+    const byCategory = categoryBreakdown(expenses, categories.data)
     return {
       summary: monthSummary(balance, expenses, today),
       comparison: compareWithPrevious(month, expenses, previousExpenses, today),
       setting,
+      spending: {
+        byCategory,
+        top: topCategory(byCategory),
+        byDay: sumByDay(expenses, month),
+        necessity: splitByNecessity(expenses),
+        payers: sumByPayer(
+          expenses,
+          members.data.map((member) => member.user_id),
+        ),
+      },
     }
-  }, [month, totals.data, settings.data, expenses, previousExpenses, incomes, savings])
+  }, [
+    month,
+    totals.data,
+    settings.data,
+    categories.data,
+    members.data,
+    expenses,
+    previousExpenses,
+    incomes,
+    savings,
+  ])
 
   const error =
-    totals.error ?? settings.error ?? expensesError ?? previousError ?? incomesError ?? savingsError
+    totals.error ??
+    settings.error ??
+    categories.error ??
+    members.error ??
+    expensesError ??
+    previousError ??
+    incomesError ??
+    savingsError
   return { data, error }
 }

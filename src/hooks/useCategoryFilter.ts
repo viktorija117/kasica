@@ -1,5 +1,7 @@
 import { useCallback } from 'react'
 import { useSearchParams } from 'react-router'
+import { currentMonthKey, monthKeyToParam, type MonthKey } from '../lib/dates'
+import { MONTH_PARAM } from './useSelectedMonth'
 
 export const CATEGORY_PARAM = 'k'
 
@@ -26,4 +28,11 @@ export function useCategoryFilter(): [string | null, (categoryId: string | null)
   )
 
   return [categoryId, setCategoryId]
+}
+
+/** Link to the Expenses screen of `month`, filtered by one category. */
+export function expensesPath(month: MonthKey, categoryId: string): string {
+  const params = new URLSearchParams({ [CATEGORY_PARAM]: categoryId })
+  if (month !== currentMonthKey()) params.set(MONTH_PARAM, monthKeyToParam(month))
+  return `/troskovi?${params}`
 }
