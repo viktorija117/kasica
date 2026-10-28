@@ -16,5 +16,6 @@ export const queryKeys = {
   monthCategoryTotals: (householdId: string, year: number) =>
     ['month-totals', householdId, 'categories', year] as const,
   monthSettings: (householdId: string) => ['month-settings', householdId] as const,
+  recurring: (householdId: string) => ['recurring', householdId] as const,
   importBatches: (householdId: string) => ['import-batches', householdId] as const,
 }

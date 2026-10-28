@@ -10,6 +10,7 @@ import {
   expenseFormReducer,
   expenseToForm,
   newExpenseForm,
+  recurringPaymentForm,
   validateExpenseForm,
   type ExpenseFormError,
 } from '../lib/expenseForm'
@@ -53,9 +54,12 @@ export function ExpenseForm({
   onDone,
 }: Props) {
   const editing = request.mode === 'edit' ? request.expense : null
-  const [state, dispatch] = useReducer(expenseFormReducer, null, () =>
-    editing ? expenseToForm(editing) : newExpenseForm(todayKey(), currentUserId),
-  )
+  const paying = request.mode === 'pay' ? request.recurring : null
+  const [state, dispatch] = useReducer(expenseFormReducer, null, () => {
+    if (editing) return expenseToForm(editing)
+    if (request.mode === 'pay') return recurringPaymentForm(request.recurring, request.date, currentUserId)
+    return newExpenseForm(todayKey(), currentUserId)
+  })
   const [showErrors, setShowErrors] = useState(false)
   const [noteOpen, setNoteOpen] = useState(state.note !== '')
   const [lastSaved, setLastSaved] = useState<string | null>(null)
@@ -74,8 +78,8 @@ export function ExpenseForm({
     [categories],
   )
   const pickable = useMemo(
-    () => pickableCategories(categories, editing?.category_id ?? null),
-    [categories, editing],
+    () => pickableCategories(categories, editing?.category_id ?? paying?.category_id ?? null),
+    [categories, editing, paying],
   )
   const matches = useMemo(
     () => matchSuggestions(suggestions, state.description),
@@ -107,7 +111,10 @@ export function ExpenseForm({
       onDone()
       return
     }
-    createExpense.mutate({ id: crypto.randomUUID(), input: result.input })
+    createExpense.mutate({
+      id: crypto.randomUUID(),
+      input: paying ? { ...result.input, recurring_id: paying.id } : result.input,
+    })
     if (!addAnother) {
       onDone()
       return
@@ -132,6 +139,12 @@ export function ExpenseForm({
 
   return (
     <form noValidate onSubmit={onSubmit} className="flex flex-col gap-5">
+      {paying && (
+        <p className="rounded-2xl bg-surface-muted px-4 py-2 text-sm font-medium">
+          {sr.expenseForm.recurringBadge(paying.name)}
+        </p>
+      )}
+
       {lastSaved && (
         <p role="status" className="rounded-2xl bg-primary-soft px-4 py-2 text-sm font-medium text-primary">
           {lastSaved}
@@ -217,12 +230,13 @@ export function ExpenseForm({
         </button>
       )}
 
-      <div className="grid grid-cols-2 gap-2">
-        {editing ? (
+      <div className={`grid gap-2 ${paying ? 'grid-cols-1' : 'grid-cols-2'}`}>
+        {editing && (
           <Button variant="secondary" className="text-danger" onClick={onDelete}>
             {sr.expenseForm.delete}
           </Button>
-        ) : (
+        )}
+        {request.mode === 'add' && (
           <Button variant="secondary" className="px-2 text-sm" onClick={() => save(true)}>
             {sr.expenseForm.saveAndAdd}
           </Button>

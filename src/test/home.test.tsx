@@ -19,6 +19,7 @@ vi.mock('../data/incomes', async () => (await import('./fakeBackend')).fakeIncom
 vi.mock('../data/savings', async () => (await import('./fakeBackend')).fakeSavings)
 vi.mock('../data/monthSettings', async () => (await import('./fakeBackend')).fakeMonthSettings)
 vi.mock('../data/monthTotals', async () => (await import('./fakeBackend')).fakeMonthTotals)
+vi.mock('../data/recurring', async () => (await import('./fakeBackend')).fakeRecurring)
 
 /** `1.234 RSD`; Testing Library turns the non-breaking space into a plain one. */
 const rsd = (amount: string) => `${amount} RSD`

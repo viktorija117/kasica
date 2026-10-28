@@ -12,6 +12,9 @@ export type ExpenseInput = Pick<
   'date' | 'category_id' | 'description' | 'amount' | 'necessity' | 'paid_by' | 'note'
 >
 
+/** A new expense; `recurring_id` links the payment of a recurring expense. */
+export type NewExpenseInput = ExpenseInput & Pick<TablesInsert<'expenses'>, 'recurring_id'>
+
 /** Expenses of one month, newest day first. */
 export async function fetchExpenses(householdId: string, month: MonthKey): Promise<Expense[]> {
   const { data, error } = await supabase
@@ -30,7 +33,7 @@ export async function fetchExpenses(householdId: string, month: MonthKey): Promi
 export async function createExpense(
   householdId: string,
   id: string,
-  input: ExpenseInput,
+  input: NewExpenseInput,
 ): Promise<Expense> {
   const { data, error } = await supabase
     .from('expenses')

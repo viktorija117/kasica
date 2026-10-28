@@ -8,6 +8,7 @@ import {
   updateExpense,
   type Expense,
   type ExpenseInput,
+  type NewExpenseInput,
 } from '../data/expenses'
 import { sr } from '../i18n/sr'
 import { monthOfDate, type MonthKey } from '../lib/dates'
@@ -118,7 +119,7 @@ export function useCreateExpense() {
     scope: EXPENSE_SCOPE,
     // The id is made here, so the row shown right away is the same row that gets saved and
     // can be edited before the save finishes.
-    mutationFn: ({ id, input }: { id: string; input: ExpenseInput }) =>
+    mutationFn: ({ id, input }: { id: string; input: NewExpenseInput }) =>
       createExpense(householdId, id, input),
     onMutate: async ({ id, input }) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.allExpenses(householdId) })
@@ -126,7 +127,6 @@ export function useCreateExpense() {
       const row: Expense = {
         id,
         household_id: householdId,
-        recurring_id: null,
         import_batch: null,
         receipt_id: null,
         created_by: userId,
@@ -136,6 +136,7 @@ export function useCreateExpense() {
         description: input.description ?? '',
         paid_by: input.paid_by ?? null,
         note: input.note ?? null,
+        recurring_id: input.recurring_id ?? null,
       }
       return { snapshot: updateCachedLists(queryClient, householdId, placeRow(row)) }
     },

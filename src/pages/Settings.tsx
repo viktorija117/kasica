@@ -5,10 +5,12 @@ import { InviteCode } from '../components/InviteCode'
 import { MembersList } from '../components/MembersList'
 import { PageTitle } from '../components/PageTitle'
 import { QueryStatus } from '../components/QueryStatus'
+import { RecurringManager } from '../components/RecurringManager'
 import { SettingsSection } from '../components/SettingsSection'
 import { signOut } from '../data/auth'
 import { useSession } from '../hooks/useAuth'
 import { useCategories, useHousehold, useMembers } from '../hooks/useHousehold'
+import { useRecurring } from '../hooks/useRecurring'
 import { sr } from '../i18n/sr'
 
 export function Settings() {
@@ -16,6 +18,7 @@ export function Settings() {
   const household = useHousehold()
   const members = useMembers()
   const categories = useCategories()
+  const recurring = useRecurring()
 
   return (
     <>
@@ -42,6 +45,14 @@ export function Settings() {
           <CategoryManager categories={categories.data} />
         ) : (
           <QueryStatus error={categories.error} />
+        )}
+      </SettingsSection>
+
+      <SettingsSection title={sr.settings.recurring}>
+        {recurring.data && categories.data ? (
+          <RecurringManager recurring={recurring.data} categories={categories.data} />
+        ) : (
+          <QueryStatus error={recurring.error ?? categories.error} />
         )}
       </SettingsSection>
 

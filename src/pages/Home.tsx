@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react'
 import { BalanceCards } from '../components/BalanceCards'
+import { DueThisMonth } from '../components/DueThisMonth'
 import { MonthStats } from '../components/MonthStats'
 import { MonthSwitcher } from '../components/MonthSwitcher'
 import { QueryStatus } from '../components/QueryStatus'
@@ -26,6 +27,9 @@ export function Home() {
       {data ? (
         <>
           <BalanceCards summary={data.summary} setting={data.setting} />
+          <div className="mt-3 empty:hidden">
+            <DueThisMonth month={month} />
+          </div>
           <MonthStats summary={data.summary} comparison={data.comparison} />
           <div className="mt-3 flex flex-col gap-3">
             {data.spending.byCategory.length > 0 && (

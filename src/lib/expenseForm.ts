@@ -1,5 +1,6 @@
 import type { Category } from '../data/categories'
 import type { Expense, ExpenseInput, ExpenseSuggestion, Necessity } from '../data/expenses'
+import type { RecurringExpense } from '../data/recurring'
 import type { DateKey } from './dates'
 import { amountToText, MAX_AMOUNT, parseAmount } from './money'
 
@@ -50,6 +51,22 @@ export function expenseToForm(expense: Expense): ExpenseFormState {
     necessityTouched: true,
     paidBy: expense.paid_by,
     note: expense.note ?? '',
+  }
+}
+
+/** Paying a recurring expense: everything filled in, the amount can still be changed. */
+export function recurringPaymentForm(
+  recurring: Pick<RecurringExpense, 'name' | 'category_id' | 'amount' | 'necessity'>,
+  date: DateKey,
+  paidBy: string | null,
+): ExpenseFormState {
+  return {
+    ...newExpenseForm(date, paidBy),
+    amountText: amountToText(recurring.amount),
+    categoryId: recurring.category_id,
+    description: recurring.name,
+    necessity: recurring.necessity,
+    necessityTouched: true,
   }
 }
 

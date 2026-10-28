@@ -422,6 +422,10 @@ export type Database = {
         Args: { p_household_id: string; p_ids: string[] }
         Returns: undefined
       }
+      reorder_recurring_expenses: {
+        Args: { p_household_id: string; p_ids: string[] }
+        Returns: undefined
+      }
       create_household: {
         Args: { p_name: string; p_display_name: string }
         Returns: string

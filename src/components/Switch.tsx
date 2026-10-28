@@ -4,14 +4,16 @@ type Props = {
   label: string
   checked: boolean
   onChange: (checked: boolean) => void
+  /** Label only for screen readers, for a switch inside a list row. */
+  hideLabel?: boolean
 }
 
 /** On/off toggle with its label; the whole row is tappable. */
-export function Switch({ label, checked, onChange }: Props) {
+export function Switch({ label, checked, onChange, hideLabel = false }: Props) {
   const id = useId()
   return (
     <div className="flex items-center justify-between gap-3">
-      <label htmlFor={id} className="text-sm">
+      <label htmlFor={id} className={hideLabel ? 'sr-only' : 'text-sm'}>
         {label}
       </label>
       <button

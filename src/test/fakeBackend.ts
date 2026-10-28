@@ -4,7 +4,7 @@
 // It must not import any app module, or the mock factories would import themselves.
 import type { Session } from '../data/auth'
 import type { Category, CategoryInput, CategoryPatch } from '../data/categories'
-import type { Expense, ExpenseInput, ExpenseSuggestion } from '../data/expenses'
+import type { Expense, ExpenseInput, ExpenseSuggestion, NewExpenseInput } from '../data/expenses'
 import type { Household, HouseholdMember } from '../data/households'
 import type { ImportBatch } from '../data/imports'
 import type { Income, IncomeInput } from '../data/incomes'
@@ -12,6 +12,7 @@ import type { ImportPlan } from '../lib/excelImport'
 import type { MonthSetting, MonthSettingInput } from '../data/monthSettings'
 import type { MonthCategoryTotalsRow } from '../data/monthCategoryTotals'
 import type { MonthTotalsRow } from '../data/monthTotals'
+import type { RecurringExpense, RecurringInput, RecurringPatch } from '../data/recurring'
 import type { Saving, SavingInput } from '../data/savings'
 
 export const VALID_INVITE_CODE = 'K7M2QX9P'
@@ -28,6 +29,7 @@ const state = {
   incomes: [] as Income[],
   savings: [] as Saving[],
   monthSettings: [] as MonthSetting[],
+  recurring: [] as RecurringExpense[],
   importBatches: [] as (ImportBatch & { carryMonths: string[]; settingsBefore: MonthSetting[] })[],
   nextId: 1,
   listeners: new Set<Listener>(),
@@ -76,7 +78,7 @@ function makeCategory(sort: number, name: string, emoji: string): Category {
   }
 }
 
-function makeExpense(id: string, input: ExpenseInput, createdBy: string | null): Expense {
+function makeExpense(id: string, input: NewExpenseInput, createdBy: string | null): Expense {
   const now = new Date().toISOString()
   return {
     id,
@@ -84,13 +86,13 @@ function makeExpense(id: string, input: ExpenseInput, createdBy: string | null):
     description: '',
     paid_by: null,
     note: null,
-    recurring_id: null,
     import_batch: null,
     receipt_id: null,
     created_by: createdBy,
     created_at: now,
     updated_at: now,
     ...input,
+    recurring_id: input.recurring_id ?? null,
   }
 }
 
@@ -196,7 +198,7 @@ export const fakeExpenses = {
       .filter((expense) => expense.date.slice(0, 7) === month.slice(0, 7))
       .sort((a, b) => b.date.localeCompare(a.date) || b.created_at.localeCompare(a.created_at)),
   ),
-  createExpense: vi.fn(async (_householdId: string, id: string, input: ExpenseInput) => {
+  createExpense: vi.fn(async (_householdId: string, id: string, input: NewExpenseInput) => {
     const expense = makeExpense(id, input, state.session?.user.id ?? null)
     state.expenses.push(expense)
     return expense
@@ -232,6 +234,57 @@ export const fakeExpenses = {
     }
     return [...byKey.values()]
   }),
+}
+
+function makeRecurring(id: string, input: RecurringInput & { sort: number }): RecurringExpense {
+  return {
+    id,
+    household_id: HOUSEHOLD_ID,
+    necessity: 'needed',
+    active: true,
+    created_at: new Date().toISOString(),
+    ...input,
+  }
+}
+
+export const fakeRecurring = {
+  fetchRecurring: vi.fn(async () =>
+    [...state.recurring].sort((a, b) => a.sort - b.sort || a.created_at.localeCompare(b.created_at)),
+  ),
+  createRecurring: vi.fn(async (_householdId: string, input: RecurringInput & { sort: number }) => {
+    const recurring = makeRecurring(newId('rec'), input)
+    state.recurring.push(recurring)
+    return recurring
+  }),
+  updateRecurring: vi.fn(async (id: string, patch: RecurringPatch) => {
+    const index = state.recurring.findIndex((recurring) => recurring.id === id)
+    state.recurring[index] = { ...state.recurring[index], ...patch }
+    return state.recurring[index]
+  }),
+  // Like `on delete set null`: payments stay, without the link.
+  deleteRecurring: vi.fn(async (id: string) => {
+    state.recurring = state.recurring.filter((recurring) => recurring.id !== id)
+    state.expenses = state.expenses.map((expense) =>
+      expense.recurring_id === id ? { ...expense, recurring_id: null } : expense,
+    )
+  }),
+  reorderRecurring: vi.fn(async (_householdId: string, ids: string[]) => {
+    state.recurring = state.recurring.map((recurring) =>
+      ids.includes(recurring.id) ? { ...recurring, sort: ids.indexOf(recurring.id) + 1 } : recurring,
+    )
+  }),
+}
+
+/** Adds a recurring expense that was set up long ago. */
+export function seedRecurring(input: Partial<RecurringExpense> & Pick<RecurringExpense, 'name' | 'amount' | 'day_of_month'>) {
+  const recurring = makeRecurring(input.id ?? `rec-${state.recurring.length + 1}`, {
+    category_id: 'cat-2',
+    sort: state.recurring.length + 1,
+    ...input,
+  })
+  recurring.created_at = input.created_at ?? '2026-01-01T09:00:00'
+  state.recurring.push(recurring)
+  return recurring
 }
 
 export const fakeIncomes = {
@@ -396,7 +449,7 @@ export function saveMonthSettingForTest(month: string, input: MonthSettingInput)
 }
 
 /** Adds an existing expense, as if one of the members had saved it earlier. */
-export function seedExpense(input: Partial<ExpenseInput> & Pick<ExpenseInput, 'date' | 'amount'>) {
+export function seedExpense(input: Partial<NewExpenseInput> & Pick<ExpenseInput, 'date' | 'amount'>) {
   const expense = makeExpense(
     `exp-${state.expenses.length + 1}`,
     { category_id: 'cat-1', necessity: 'needed', paid_by: 'user-me', ...input },
@@ -417,6 +470,7 @@ export function resetBackend({ signedIn = false, withHousehold = false } = {}) {
   state.incomes = []
   state.savings = []
   state.monthSettings = []
+  state.recurring = []
   state.importBatches = []
   state.nextId = 1
   if (withHousehold) {
