@@ -12,6 +12,7 @@ vi.mock('../data/savings', async () => (await import('./fakeBackend')).fakeSavin
 vi.mock('../data/monthSettings', async () => (await import('./fakeBackend')).fakeMonthSettings)
 vi.mock('../data/monthTotals', async () => (await import('./fakeBackend')).fakeMonthTotals)
 vi.mock('../data/recurring', async () => (await import('./fakeBackend')).fakeRecurring)
+vi.mock('../data/receipts', async () => (await import('./fakeBackend')).fakeReceipts)
 
 beforeEach(() => {
   vi.clearAllMocks()

@@ -18,4 +18,7 @@ export const queryKeys = {
   monthSettings: (householdId: string) => ['month-settings', householdId] as const,
   recurring: (householdId: string) => ['recurring', householdId] as const,
   importBatches: (householdId: string) => ['import-batches', householdId] as const,
+  /** A receipt fetched from suf.purs.gov.rs; the same for every household. */
+  fiscalReceipt: (url: string) => ['fiscal-receipt', url] as const,
+  savedReceipt: (householdId: string, url: string) => ['saved-receipt', householdId, url] as const,
 }

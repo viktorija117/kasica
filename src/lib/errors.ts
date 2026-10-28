@@ -22,6 +22,11 @@ const databaseMessages: Record<string, string> = {
   invalid_invite_code: sr.errors.invalidInviteCode,
   invalid_household_name: sr.errors.invalidHouseholdName,
   invalid_display_name: sr.errors.invalidDisplayName,
+  // Fiscal receipts: the save_receipt function and the fiscal-receipt Edge Function.
+  receipt_exists: sr.errors.receiptExists,
+  invalid_receipt_url: sr.errors.invalidReceiptUrl,
+  receipt_not_found: sr.errors.receiptNotFound,
+  receipt_site_unavailable: sr.errors.receiptSiteUnavailable,
 }
 
 /** Turns any error from Supabase or the network into a Serbian sentence for the user. */

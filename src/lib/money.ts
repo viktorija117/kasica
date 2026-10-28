@@ -18,6 +18,13 @@ export function formatAmount(amount: number): string {
     : decimalFormatter.format(rounded)
 }
 
+const quantityFormatter = new Intl.NumberFormat('sr-RS', { maximumFractionDigits: 3 })
+
+/** A quantity from a receipt: `2`, `0,512` (kilograms have three decimals). */
+export function formatQuantity(quantity: number): string {
+  return quantityFormatter.format(quantity)
+}
+
 const percentFormatter = new Intl.NumberFormat('sr-RS', { style: 'percent', maximumFractionDigits: 0 })
 
 /** A 0–1 ratio as a whole percent: `0.234` → `23%`. */

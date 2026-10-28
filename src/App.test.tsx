@@ -12,6 +12,7 @@ vi.mock('./data/savings', async () => (await import('./test/fakeBackend')).fakeS
 vi.mock('./data/monthSettings', async () => (await import('./test/fakeBackend')).fakeMonthSettings)
 vi.mock('./data/monthTotals', async () => (await import('./test/fakeBackend')).fakeMonthTotals)
 vi.mock('./data/recurring', async () => (await import('./test/fakeBackend')).fakeRecurring)
+vi.mock('./data/receipts', async () => (await import('./test/fakeBackend')).fakeReceipts)
 
 // The shell is only reachable once signed in with a household; wait for the guards.
 async function renderApp(path = '/') {

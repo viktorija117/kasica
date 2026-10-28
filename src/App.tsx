@@ -8,6 +8,7 @@ import { Home } from './pages/Home'
 import { HouseholdSetup } from './pages/HouseholdSetup'
 import { Import } from './pages/Import'
 import { Login } from './pages/Login'
+import { ReceiptReview } from './pages/ReceiptReview'
 import { Settings } from './pages/Settings'
 import { Year } from './pages/Year'
 
@@ -26,6 +27,7 @@ export function AppRoutes() {
             <Route index element={<Home />} />
             <Route path="troskovi" element={<Expenses />} />
             <Route path="godina" element={<Year />} />
+            <Route path="racun" element={<ReceiptReview />} />
             <Route path="podesavanja" element={<Settings />} />
             <Route path="podesavanja/uvoz" element={<Import />} />
             <Route path="*" element={<Navigate to="/" replace />} />

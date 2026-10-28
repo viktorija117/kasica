@@ -20,6 +20,7 @@ import { AmountInput } from './AmountInput'
 import { Button } from './Button'
 import { CategoryPicker } from './CategoryPicker'
 import { DescriptionInput } from './DescriptionInput'
+import { CameraIcon } from './icons'
 import { SegmentedControl } from './SegmentedControl'
 import { TextField } from './TextField'
 
@@ -30,6 +31,8 @@ type Props = {
   suggestions: ExpenseSuggestion[]
   currentUserId: string
   amountRef: RefObject<HTMLInputElement>
+  /** Opens the receipt scanner instead of typing the expense in. */
+  onScan: () => void
   onDone: () => void
 }
 
@@ -51,6 +54,7 @@ export function ExpenseForm({
   suggestions,
   currentUserId,
   amountRef,
+  onScan,
   onDone,
 }: Props) {
   const editing = request.mode === 'edit' ? request.expense : null
@@ -143,6 +147,13 @@ export function ExpenseForm({
         <p className="rounded-2xl bg-surface-muted px-4 py-2 text-sm font-medium">
           {sr.expenseForm.recurringBadge(paying.name)}
         </p>
+      )}
+
+      {request.mode === 'add' && !lastSaved && (
+        <Button variant="secondary" onClick={onScan}>
+          <CameraIcon className="size-5" />
+          {sr.receipt.scan}
+        </Button>
       )}
 
       {lastSaved && (

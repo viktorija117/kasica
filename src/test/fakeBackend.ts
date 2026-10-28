@@ -13,7 +13,10 @@ import type { MonthSetting, MonthSettingInput } from '../data/monthSettings'
 import type { MonthCategoryTotalsRow } from '../data/monthCategoryTotals'
 import type { MonthTotalsRow } from '../data/monthTotals'
 import type { RecurringExpense, RecurringInput, RecurringPatch } from '../data/recurring'
+import type { ReceiptInput, SavedReceipt } from '../data/receipts'
 import type { Saving, SavingInput } from '../data/savings'
+import type { RawReceipt } from '../lib/receipt'
+import { RECEIPT_SPECIFICATIONS, RECEIPT_URL, receiptHtml } from './receiptFixtures'
 
 export const VALID_INVITE_CODE = 'K7M2QX9P'
 const HOUSEHOLD_ID = 'hh-1'
@@ -31,6 +34,9 @@ const state = {
   monthSettings: [] as MonthSetting[],
   recurring: [] as RecurringExpense[],
   importBatches: [] as (ImportBatch & { carryMonths: string[]; settingsBefore: MonthSetting[] })[],
+  receipts: [] as (SavedReceipt & ReceiptInput)[],
+  /** What suf.purs.gov.rs answers for a link: the receipt, or an error code of the Edge Function. */
+  fiscalSite: new Map<string, RawReceipt | string>(),
   nextId: 1,
   listeners: new Set<Listener>(),
 }
@@ -384,6 +390,33 @@ export const fakeImports = {
   }),
 }
 
+// Same effect as the fiscal-receipt Edge Function and the save_receipt database function.
+export const fakeReceipts = {
+  fetchFiscalReceipt: vi.fn(async (url: string) => {
+    const answer = state.fiscalSite.get(url) ?? 'receipt_not_found'
+    if (typeof answer === 'string') throw new Error(answer)
+    return answer
+  }),
+  findReceiptByUrl: vi.fn(async (_householdId: string, url: string) => {
+    const receipt = state.receipts.find((row) => row.url === url)
+    return receipt ? { id: receipt.id, store: receipt.store, date: receipt.date, created_at: receipt.created_at } : null
+  }),
+  saveReceipt: vi.fn(async (_householdId: string, receipt: ReceiptInput, expenses: ExpenseInput[]) => {
+    if (state.receipts.some((row) => row.url === receipt.url)) throw databaseError('receipt_exists')
+    const id = newId('rcp')
+    state.receipts.push({ ...receipt, id, created_at: new Date().toISOString() })
+    for (const expense of expenses) {
+      state.expenses.push({ ...makeExpense(newId('exp'), expense, state.session?.user.id ?? null), receipt_id: id })
+    }
+    return id
+  }),
+}
+
+/** Sets what the tax office's site answers for a receipt link. */
+export function setFiscalSiteAnswer(url: string, answer: RawReceipt | string) {
+  state.fiscalSite.set(url, answer)
+}
+
 // Same sums as the month_totals view.
 export const fakeMonthTotals = {
   fetchMonthTotals: vi.fn(async () => {
@@ -472,6 +505,8 @@ export function resetBackend({ signedIn = false, withHousehold = false } = {}) {
   state.monthSettings = []
   state.recurring = []
   state.importBatches = []
+  state.receipts = []
+  state.fiscalSite = new Map([[RECEIPT_URL, { html: receiptHtml(), specifications: RECEIPT_SPECIFICATIONS }]])
   state.nextId = 1
   if (withHousehold) {
     state.household = makeHousehold('Naša kuća')

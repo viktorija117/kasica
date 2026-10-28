@@ -1,4 +1,4 @@
-import { findExactSuggestion, matchSuggestions } from './suggestions'
+import { findExactSuggestion, findSimilarSuggestion, matchSuggestions } from './suggestions'
 
 const history = [
   { description: 'Mineralna voda', uses: 2, last_date: '2026-10-20' },
@@ -49,5 +49,36 @@ describe('findExactSuggestion', () => {
     expect(findExactSuggestion(history, 'cevapi')?.description).toBe('Ćevapi')
     expect(findExactSuggestion(history, 'vod')).toBeUndefined()
     expect(findExactSuggestion(history, '')).toBeUndefined()
+  })
+})
+
+describe('findSimilarSuggestion', () => {
+  const known = [
+    { description: 'Hleb', uses: 30, last_date: '2026-10-27' },
+    { description: 'Hleb beli', uses: 2, last_date: '2026-09-01' },
+    { description: 'Banane', uses: 3, last_date: '2026-10-02' },
+    { description: 'banane bio', uses: 1, last_date: '2026-10-20' },
+    { description: 'Čokolada', uses: 5, last_date: '2026-10-10' },
+  ]
+  const similar = (name: string) => findSimilarSuggestion(known, name)?.description
+
+  it('prefers the same description', () => {
+    expect(similar('BANANE')).toBe('Banane')
+  })
+
+  it('picks the entry sharing the most leading words, ignoring sizes', () => {
+    expect(similar('Hleb beli 500g')).toBe('Hleb beli')
+    expect(similar('Hleb raženi 400g')).toBe('Hleb')
+    expect(similar('Cokolada Milka mlečna 100g')).toBe('Čokolada')
+  })
+
+  it('takes the most recent one on a tie', () => {
+    expect(similar('Banane Ekvador')).toBe('banane bio')
+  })
+
+  it('suggests nothing without a shared first word', () => {
+    expect(similar('Deterdžent za sudove 1l')).toBeUndefined()
+    expect(similar('Mleko hleb')).toBeUndefined()
+    expect(similar('1l')).toBeUndefined()
   })
 })

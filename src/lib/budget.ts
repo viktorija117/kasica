@@ -665,3 +665,43 @@ export function yearChartData(overview: YearOverview<unknown>): YearChartPoint[]
     saved: balance.saved,
   }))
 }
+
+// --- fiscal receipts ---------------------------------------------------------------------
+
+/**
+ * Folds discount lines (negative totals) of a receipt into the item they belong to: the item
+ * right above them, or the first item below when the receipt starts with a discount.
+ * The receipt's sum stays the same. Lines left at 0 or less are dropped, since an expense
+ * needs an amount above zero.
+ */
+export function foldDiscounts<T extends { total: number }>(lines: readonly T[]): T[] {
+  const folded: { line: T; para: number }[] = []
+  let pending = 0
+  for (const line of lines) {
+    const para = toPara(line.total)
+    if (para < 0 && folded.length > 0) folded[folded.length - 1].para += para
+    else if (para < 0) pending += para
+    else {
+      folded.push({ line, para: para + pending })
+      pending = 0
+    }
+  }
+  return folded
+    .filter(({ para }) => para > 0)
+    .map(({ line, para }) => ({ ...line, total: fromPara(para) }))
+}
+
+export type ReceiptBalance = {
+  /** Sum of the items that will be saved. */
+  selected: number
+  /** `selected - receipt total`; null when the receipt has no total. */
+  difference: number | null
+}
+
+export function receiptBalance(items: readonly HasAmount[], receiptTotal: number | null): ReceiptBalance {
+  const selected = sumAmounts(items)
+  return {
+    selected,
+    difference: receiptTotal === null ? null : fromPara(toPara(selected) - toPara(receiptTotal)),
+  }
+}

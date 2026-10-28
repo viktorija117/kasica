@@ -2,11 +2,13 @@ import {
   balanceChain,
   categoryBreakdown,
   compareWithPrevious,
+  foldDiscounts,
   limitStatus,
   groupByDay,
   monthBalance,
   monthSummary,
   monthTotalsOf,
+  receiptBalance,
   sameAmount,
   splitByNecessity,
   sumAmounts,
@@ -638,5 +640,35 @@ describe('yearOverview', () => {
     const points = yearChartData(yearOverview(input))
     expect(points).toHaveLength(12)
     expect(points[1]).toEqual({ month: '2026-02-01', income: 100000, spent: 80000, saved: -5000 })
+  })
+})
+
+describe('foldDiscounts', () => {
+  const line = (name: string, total: number) => ({ name, total })
+
+  it('takes a discount off the item above it', () => {
+    expect(foldDiscounts([line('Milka', 219.99), line('Popust', -20), line('Hleb', 89.99)])).toEqual([
+      line('Milka', 199.99),
+      line('Hleb', 89.99),
+    ])
+  })
+
+  it('takes a discount at the top off the first item below it', () => {
+    expect(foldDiscounts([line('Popust', -0.1), line('Voda', 0.3)])).toEqual([line('Voda', 0.2)])
+  })
+
+  it('keeps the sum and drops lines that end at zero', () => {
+    const lines = [line('Kesa', 5), line('Kesa gratis', -5), line('Banane', 87.03), line('Uzorak', 0)]
+    const folded = foldDiscounts(lines)
+    expect(folded).toEqual([line('Banane', 87.03)])
+    expect(sumAmounts(folded.map(({ total }) => ({ amount: total })))).toBe(87.03)
+  })
+})
+
+describe('receiptBalance', () => {
+  it('compares the chosen items with the receipt total', () => {
+    expect(receiptBalance([{ amount: 0.1 }, { amount: 0.2 }], 0.3)).toEqual({ selected: 0.3, difference: 0 })
+    expect(receiptBalance([{ amount: 179.98 }], 1716.99)).toEqual({ selected: 179.98, difference: -1537.01 })
+    expect(receiptBalance([], null)).toEqual({ selected: 0, difference: null })
   })
 })

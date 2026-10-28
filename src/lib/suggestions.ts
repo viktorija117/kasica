@@ -44,3 +44,43 @@ export function matchSuggestions<T extends Suggestion>(
     .slice(0, limit)
     .map(({ suggestion }) => suggestion)
 }
+
+/** Words of a description, without sizes and amounts: "Hleb beli 500g" → ["hleb", "beli"]. */
+function words(text: string): string[] {
+  return searchKey(text)
+    .split(/[^\p{L}\d]+/u)
+    .filter((word) => word.length >= 2 && !/\d/.test(word))
+}
+
+/**
+ * The history entry most like a receipt item's name, so its category and necessity can be
+ * suggested: the same description, else the one sharing the most leading words with it
+ * ("Hleb" for "Hleb beli 500g"), the most recent winning a tie. Nothing when not even the
+ * first word (3 letters or more) is the same.
+ */
+export function findSimilarSuggestion<T extends Suggestion>(
+  suggestions: readonly T[],
+  name: string,
+): T | undefined {
+  const exact = findExactSuggestion(suggestions, name)
+  if (exact) return exact
+
+  const itemWords = words(name)
+  if (itemWords.length === 0 || itemWords[0].length < 3) return undefined
+
+  let best: { suggestion: T; shared: number } | undefined
+  for (const suggestion of suggestions) {
+    const known = words(suggestion.description)
+    let shared = 0
+    while (shared < Math.min(known.length, itemWords.length) && known[shared] === itemWords[shared]) shared++
+    if (shared === 0) continue
+    if (
+      !best ||
+      shared > best.shared ||
+      (shared === best.shared && suggestion.last_date > best.suggestion.last_date)
+    ) {
+      best = { suggestion, shared }
+    }
+  }
+  return best?.suggestion
+}

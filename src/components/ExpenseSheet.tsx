@@ -1,4 +1,5 @@
 import { useRef } from 'react'
+import { useNavigate } from 'react-router'
 import { useSession } from '../hooks/useAuth'
 import { useSuggestions } from '../hooks/useExpenses'
 import type { ExpenseSheetRequest } from '../hooks/useExpenseSheet'
@@ -25,6 +26,12 @@ export function ExpenseSheet({ request, onClose }: Props) {
   const members = useMembers()
   const suggestions = useSuggestions()
   const amountRef = useRef<HTMLInputElement>(null)
+  const navigate = useNavigate()
+
+  const scanReceipt = () => {
+    onClose()
+    navigate('/racun')
+  }
 
   const title =
     request?.mode === 'edit'
@@ -52,6 +59,7 @@ export function ExpenseSheet({ request, onClose }: Props) {
             suggestions={suggestions.data ?? []}
             currentUserId={userId}
             amountRef={amountRef}
+            onScan={scanReceipt}
             onDone={onClose}
           />
         ) : (

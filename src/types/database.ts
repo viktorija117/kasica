@@ -418,6 +418,17 @@ export type Database = {
         Args: { p_batch_id: string }
         Returns: undefined
       }
+      save_receipt: {
+        Args: {
+          p_household_id: string
+          p_url: string
+          p_store: string
+          p_date: string
+          p_total: number | null
+          p_expenses: Json
+        }
+        Returns: string
+      }
       reorder_categories: {
         Args: { p_household_id: string; p_ids: string[] }
         Returns: undefined
