@@ -5,12 +5,13 @@
 //
 // POST { url: "https://suf.purs.gov.rs/v/?vl=..." }
 //   200 { html, specifications }   specifications is null when the items request failed
+// POST { warm: true }
+//   200 { ok: true }   sent when the scanner opens, so the function is already running when
+//                      the QR code is read
 //   400 { error: "invalid_receipt_url" }
 //   401 { error: "not_authenticated" }
 //   404 { error: "receipt_not_found" }
 //   502 { error: "receipt_site_unavailable" }
-import { createClient } from 'npm:@supabase/supabase-js@2.118.0'
-
 const HOST = 'suf.purs.gov.rs'
 const TIMEOUT_MS = 10_000
 const MAX_PAGE_BYTES = 2_000_000
@@ -50,15 +51,29 @@ function receiptUrl(value: unknown): string | null {
   return `https://${HOST}/v/?vl=${vl}`
 }
 
+/**
+ * Asks Supabase Auth whether the caller's token belongs to a signed-in user. A plain request
+ * instead of supabase-js keeps the function's cold start short.
+ */
 async function isSignedIn(request: Request): Promise<boolean> {
   const authorization = request.headers.get('Authorization')
   if (!authorization) return false
-  const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, {
-    global: { headers: { Authorization: authorization } },
-    auth: { persistSession: false },
-  })
-  const { data, error } = await supabase.auth.getUser()
-  return !error && data.user !== null
+  try {
+    const response = await fetch(`${Deno.env.get('SUPABASE_URL')}/auth/v1/user`, {
+      headers: { Authorization: authorization, apikey: Deno.env.get('SUPABASE_ANON_KEY')! },
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    })
+    await response.body?.cancel()
+    return response.ok
+  } catch {
+    return false
+  }
+}
+
+/** How long each step took, for the browser's network panel (`Server-Timing`). */
+function timed<T>(timings: string[], name: string, work: Promise<T>): Promise<T> {
+  const start = performance.now()
+  return work.finally(() => timings.push(`${name};dur=${Math.round(performance.now() - start)}`))
 }
 
 /** `name=value` pairs of the page's cookies; the items request needs the same session. */
@@ -71,12 +86,12 @@ function cookiesOf(response: Response): string {
 
 class NotFound extends Error {}
 
-async function fetchReceipt(url: string): Promise<{ html: string; specifications: unknown }> {
-  const page = await fetch(url, {
+async function fetchReceipt(url: string, timings: string[]): Promise<{ html: string; specifications: unknown }> {
+  const page = await timed(timings, 'page', fetch(url, {
     headers: { ...browserHeaders, Accept: 'text/html,application/xhtml+xml' },
     redirect: 'manual',
     signal: AbortSignal.timeout(TIMEOUT_MS),
-  })
+  }))
   if (page.status >= 500) throw new Error(`page ${page.status}`)
   if (page.status !== 200) throw new NotFound()
   const html = await page.text()
@@ -89,7 +104,7 @@ async function fetchReceipt(url: string): Promise<{ html: string; specifications
 
   let specifications: unknown = null
   try {
-    const items = await fetch(`https://${HOST}/specifications`, {
+    const items = await timed(timings, 'items', fetch(`https://${HOST}/specifications`, {
       method: 'POST',
       headers: {
         ...browserHeaders,
@@ -103,7 +118,7 @@ async function fetchReceipt(url: string): Promise<{ html: string; specifications
       body: new URLSearchParams({ invoiceNumber, token }),
       redirect: 'manual',
       signal: AbortSignal.timeout(TIMEOUT_MS),
-    })
+    }))
     if (items.ok) specifications = await items.json()
   } catch {
     // The app falls back to the items printed on the receipt.
@@ -115,17 +130,32 @@ Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   if (request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405)
 
-  if (!(await isSignedIn(request))) return json({ error: 'not_authenticated' }, 401)
-
   const body = await request.json().catch(() => null)
+  // The gateway has already checked the token (verify_jwt); nothing is read for a warm-up.
+  if (body?.warm === true) return json({ ok: true })
+
   const url = receiptUrl(body?.url)
   if (!url) return json({ error: 'invalid_receipt_url' }, 400)
 
-  try {
-    return json(await fetchReceipt(url))
-  } catch (error) {
-    if (error instanceof NotFound) return json({ error: 'receipt_not_found' }, 404)
-    console.error('fiscal-receipt', error)
-    return json({ error: 'receipt_site_unavailable' }, 502)
-  }
+  // The sign-in check and the slow tax office site run at the same time; the receipt is only
+  // handed out once the check has passed.
+  const timings: string[] = []
+  const signedIn = timed(timings, 'auth', isSignedIn(request))
+  const receipt = fetchReceipt(url, timings).then(
+    (value) => ({ value }),
+    (error: unknown) => ({ error }),
+  )
+  if (!(await signedIn)) return json({ error: 'not_authenticated' }, 401)
+
+  const result = await receipt
+  const response = 'value' in result ? json(result.value) : failure(result.error)
+  response.headers.set('Server-Timing', timings.join(', '))
+  response.headers.set('Access-Control-Expose-Headers', 'Server-Timing')
+  return response
 })
+
+function failure(error: unknown): Response {
+  if (error instanceof NotFound) return json({ error: 'receipt_not_found' }, 404)
+  console.error('fiscal-receipt', error)
+  return json({ error: 'receipt_site_unavailable' }, 502)
+}

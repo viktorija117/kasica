@@ -396,6 +396,7 @@ export const fakeImports = {
 
 // Same effect as the fiscal-receipt Edge Function and the save_receipt database function.
 export const fakeReceipts = {
+  warmUpFiscalReceipt: vi.fn(() => {}),
   fetchFiscalReceipt: vi.fn(async (url: string) => {
     const answer = state.fiscalSite.get(url) ?? 'receipt_not_found'
     if (typeof answer === 'string') throw new Error(answer)

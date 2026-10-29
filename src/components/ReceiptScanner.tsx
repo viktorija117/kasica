@@ -1,4 +1,5 @@
-import { useRef, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { warmUpFiscalReceipt } from '../data/receipts'
 import { useQrScanner, type CameraStatus } from '../hooks/useQrScanner'
 import { sr } from '../i18n/sr'
 import { normalizeReceiptUrl } from '../lib/receipt'
@@ -24,6 +25,8 @@ export function ReceiptScanner({ onUrl, onManual }: Props) {
   const [wrongCode, setWrongCode] = useState(false)
   const [pasted, setPasted] = useState('')
   const [pasteError, setPasteError] = useState(false)
+
+  useEffect(warmUpFiscalReceipt, [])
 
   const status = useQrScanner(videoRef, (text) => {
     const url = normalizeReceiptUrl(text)

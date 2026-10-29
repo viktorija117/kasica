@@ -26,6 +26,14 @@ export async function fetchFiscalReceipt(url: string): Promise<RawReceipt> {
   throw error ?? new Error('receipt_site_unavailable')
 }
 
+/**
+ * Starts the `fiscal-receipt` Edge Function while the camera is still aiming, so reading the
+ * receipt does not wait for its cold start. Failures do not matter.
+ */
+export function warmUpFiscalReceipt(): void {
+  supabase.functions.invoke('fiscal-receipt', { body: { warm: true } }).catch(() => undefined)
+}
+
 /** The receipt already saved with this link, if any. */
 export async function findReceiptByUrl(householdId: string, url: string): Promise<SavedReceipt | null> {
   const { data, error } = await supabase
