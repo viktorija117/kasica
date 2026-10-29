@@ -1,6 +1,7 @@
 import { cleanup, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import {
+  fakeHouseholds,
   fakeIncomes,
   fakeMonthSettings,
   fakeSavings,
@@ -66,10 +67,33 @@ describe('Home', () => {
     expect(within(opening).getByText(amountText(rsd('100.000')))).toBeInTheDocument()
     expect(within(opening).getByText(`preneto ${rsd('30.000')} + prihodi ${rsd('70.000')}`)).toBeInTheDocument()
     expect(within(card('Potrošeno')).getByText(amountText(rsd('21.500')))).toBeInTheDocument()
-    expect(within(card('Ušteđeno')).getByText(amountText(rsd('-5.000')))).toBeInTheDocument()
+    // Savings: 10.000 in September − 5.000 withdrawn in October.
+    expect(within(card('Štednja')).getByText(amountText(rsd('5.000')))).toBeInTheDocument()
+    expect(within(card('Štednja')).getByText(`−${rsd('5.000')} podignuto ovog meseca`)).toBeInTheDocument()
     // 100.000 − 21.500 − (−5.000)
     expect(within(card('Preostalo')).getByText(amountText(rsd('83.500')))).toBeInTheDocument()
     expect(within(card('Preostalo')).getByText('Iskorišćeno 22%')).toBeInTheDocument()
+  })
+
+  it('adds the savings opening balance from Settings to the savings total', async () => {
+    const user = userEvent.setup()
+    renderApp('/podesavanja')
+
+    const field = await screen.findByLabelText('Početno stanje štednje')
+    await user.type(field, '150.000')
+    await user.click(within(field.closest('form')!).getByRole('button', { name: 'Sačuvaj' }))
+    expect(fakeHouseholds.updateSavingsOpening).toHaveBeenCalledWith('hh-1', 150000)
+
+    await user.click(screen.getByRole('link', { name: 'Početna' }))
+    const savings = await screen.findByRole('region', { name: 'Štednja' })
+    expect(within(savings).getByText(amountText(rsd('155.000')))).toBeInTheDocument()
+  })
+
+  it('shows savings by the end of a past month, and a month without any', async () => {
+    seedSaving({ date: '2026-08-10', amount: 2000, note: null })
+    await openHome('/?m=2026-08')
+    expect(within(card('Štednja')).getByText(amountText(rsd('2.000')))).toBeInTheDocument()
+    expect(within(card('Štednja')).getByText(`+${rsd('2.000')} u tom mesecu`)).toBeInTheDocument()
   })
 
   it('shows the current month numbers: today, average, allowance, unneeded, last month', async () => {

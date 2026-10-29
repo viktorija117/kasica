@@ -1,4 +1,5 @@
 import {
+  savingsBalance,
   balanceChain,
   categoryBreakdown,
   compareWithPrevious,
@@ -220,6 +221,27 @@ describe('monthTotalsOf / withMonthTotals', () => {
   it('an emptied month has no data', () => {
     const live = monthTotalsOf('2026-10-01', { incomes: [], expenses: [], savings: [] })
     expect(monthBalance([live], [], '2026-10-01').hasData).toBe(false)
+  })
+})
+
+describe('savingsBalance', () => {
+  const totals = [
+    { month: '2026-08-01', income: 0, spent: 0, saved: 10000.1, entries: 1 },
+    { month: '2026-09-01', income: 0, spent: 0, saved: -2500.2, entries: 1 },
+    { month: '2026-10-01', income: 0, spent: 0, saved: 15000, entries: 2 },
+  ]
+
+  it('adds the opening balance and every saving up to the month', () => {
+    expect(savingsBalance(50000, totals, '2026-10-01')).toEqual({ total: 72499.9, month: 15000 })
+  })
+
+  it('ignores later months, and a withdrawal shows as a negative month', () => {
+    expect(savingsBalance(0, totals, '2026-09-01')).toEqual({ total: 7499.9, month: -2500.2 })
+  })
+
+  it('is just the opening balance before any saving, and 0 for a month without one', () => {
+    expect(savingsBalance(1234.5, totals, '2026-07-01')).toEqual({ total: 1234.5, month: 0 })
+    expect(savingsBalance(0, totals, '2026-11-01')).toEqual({ total: 22499.9, month: 0 })
   })
 })
 

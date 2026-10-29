@@ -2,17 +2,19 @@ import { useCallback, useState } from 'react'
 import type { MonthSettingInput } from '../data/monthSettings'
 import { useSaveMonthSetting } from '../hooks/useMonthSummary'
 import { sr } from '../i18n/sr'
-import type { MonthSummary } from '../lib/budget'
+import type { MonthSummary, SavingsBalance } from '../lib/budget'
 import { formatPercent, formatRSD } from '../lib/money'
 import { Amount } from './Amount'
 import { CarrySheet } from './CarrySheet'
 import { ProgressBar } from './ProgressBar'
+import { SavingsCard } from './SavingsCard'
 import { StatCard } from './StatCard'
 import { Switch } from './Switch'
 
 type Props = {
   summary: MonthSummary
   setting: MonthSettingInput
+  savings: SavingsBalance
 }
 
 function allowanceText(summary: MonthSummary): string | null {
@@ -21,8 +23,8 @@ function allowanceText(summary: MonthSummary): string | null {
   return sr.home.allowance(formatRSD(summary.dailyAllowance), summary.daysLeft)
 }
 
-/** Preostalo, Početno stanje (with the carry controls), Potrošeno and Ušteđeno. */
-export function BalanceCards({ summary, setting }: Props) {
+/** Preostalo, Početno stanje (with the carry controls), Potrošeno and Štednja. */
+export function BalanceCards({ summary, setting, savings }: Props) {
   const [adjusting, setAdjusting] = useState(false)
   const closeAdjust = useCallback(() => setAdjusting(false), [])
   const saveSetting = useSaveMonthSetting()
@@ -70,7 +72,7 @@ export function BalanceCards({ summary, setting }: Props) {
 
       <div className="grid grid-cols-2 gap-3">
         <StatCard label={sr.home.spent} value={summary.spent} size="md" />
-        <StatCard label={sr.home.saved} value={summary.saved} size="md" />
+        <SavingsCard savings={savings} month={summary.month} phase={summary.phase} />
       </div>
 
       <CarrySheet

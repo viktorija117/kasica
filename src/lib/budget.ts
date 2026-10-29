@@ -254,6 +254,31 @@ export function monthBalance(
   return chain[chain.length - 1]
 }
 
+// --- savings balance ---------------------------------------------------------------------
+
+export type SavingsBalance = {
+  /** In savings at the end of the month: the opening balance + every saving up to it. */
+  total: number
+  /** Saved in the month itself (negative when more was withdrawn). */
+  month: number
+}
+
+/** How much is in savings by the end of `month`. Later months do not count. */
+export function savingsBalance(
+  opening: number,
+  totals: readonly MonthTotals[],
+  month: MonthKey,
+): SavingsBalance {
+  let total = toPara(opening)
+  let inMonth = 0
+  for (const row of totals) {
+    if (row.month > month) continue
+    total += toPara(row.saved)
+    if (row.month === month) inMonth += toPara(row.saved)
+  }
+  return { total: fromPara(total), month: fromPara(inMonth) }
+}
+
 // --- month summary -----------------------------------------------------------------------
 
 export type MonthPhase = 'past' | 'current' | 'future'

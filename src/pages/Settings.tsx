@@ -6,6 +6,7 @@ import { MembersList } from '../components/MembersList'
 import { PageTitle } from '../components/PageTitle'
 import { QueryStatus } from '../components/QueryStatus'
 import { RecurringManager } from '../components/RecurringManager'
+import { SavingsOpeningForm } from '../components/SavingsOpeningForm'
 import { SettingsSection } from '../components/SettingsSection'
 import { signOut } from '../data/auth'
 import { useSession } from '../hooks/useAuth'
@@ -46,6 +47,10 @@ export function Settings() {
         ) : (
           <QueryStatus error={categories.error} />
         )}
+      </SettingsSection>
+
+      <SettingsSection title={sr.savingsOpening.title}>
+        <SavingsOpeningForm />
       </SettingsSection>
 
       <SettingsSection title={sr.settings.recurring}>

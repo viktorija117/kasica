@@ -34,3 +34,8 @@ export function useSelectedMonth(): [MonthKey, (month: MonthKey) => void] {
 export function homePath(month: MonthKey): string {
   return month === currentMonthKey() ? '/' : `/?${MONTH_PARAM}=${monthKeyToParam(month)}`
 }
+
+/** Link to the Expenses screen of `month` (incomes and savings are listed there too). */
+export function expensesMonthPath(month: MonthKey): string {
+  return month === currentMonthKey() ? '/troskovi' : `/troskovi?${MONTH_PARAM}=${monthKeyToParam(month)}`
+}

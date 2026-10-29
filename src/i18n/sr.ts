@@ -150,6 +150,12 @@ export const sr = {
     openingSplit: (carried: string, income: string) => `preneto ${carried} + prihodi ${income}`,
     spent: 'Potrošeno',
     saved: 'Ušteđeno',
+    savings: 'Štednja',
+    savingsOpen: 'Štednja: otvori uplate i podizanja',
+    savingsDeposit: (amount: string, current: boolean) => `+${amount} ${current ? 'ovog meseca' : 'u tom mesecu'}`,
+    savingsWithdrawal: (amount: string, current: boolean) =>
+      `−${amount} podignuto ${current ? 'ovog meseca' : 'u tom mesecu'}`,
+    savingsNone: (current: boolean) => (current ? 'Ovog meseca bez uplate' : 'U tom mesecu bez uplate'),
     remaining: 'Preostalo',
     used: (pct: string) => `Iskorišćeno ${pct}`,
     today: 'Danas',
@@ -406,6 +412,16 @@ export const sr = {
     saveAll: (n: number) => `Sačuvaj sve (${n})`,
     saved: (n: number) => `Sačuvano: ${n} ${plural(n, 'trošak', 'troška', 'troškova')} sa računa`,
     saveFailed: 'Račun nije sačuvan. Proveri internet i pokušaj ponovo.',
+  },
+
+  savingsOpening: {
+    title: 'Štednja',
+    label: 'Početno stanje štednje',
+    hint: 'Koliko ste imali u štednji pre nego što ste počeli da je upisujete u Kasicu. Dodaje se na sve uplate i podizanja.',
+    save: 'Sačuvaj',
+    saved: 'Početno stanje štednje je sačuvano',
+    saveFailed: 'Početno stanje štednje nije sačuvano. Proveri internet i pokušaj ponovo.',
+    errorAmount: 'Upiši iznos, npr. 150.000 ili 0.',
   },
 
   settings: {

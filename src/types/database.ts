@@ -28,18 +28,21 @@ export type Database = {
           name: string
           invite_code: string
           created_at: string
+          savings_opening: number
         }
         Insert: {
           id?: string
           name: string
           invite_code: string
           created_at?: string
+          savings_opening?: number
         }
         Update: {
           id?: string
           name?: string
           invite_code?: string
           created_at?: string
+          savings_opening?: number
         }
         Relationships: []
       }

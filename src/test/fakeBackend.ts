@@ -56,6 +56,7 @@ function makeHousehold(name: string): Household {
     name,
     invite_code: VALID_INVITE_CODE,
     created_at: '2026-10-27T10:00:00Z',
+    savings_opening: 0,
   }
 }
 
@@ -168,6 +169,9 @@ export const fakeHouseholds = {
     state.members = [makeMember(state.session!.user.id, displayName)]
     state.categories = [makeCategory(1, 'Hrana', '🛒'), makeCategory(2, 'Računi', '🧾')]
     return HOUSEHOLD_ID
+  }),
+  updateSavingsOpening: vi.fn(async (_householdId: string, amount: number) => {
+    state.household = { ...state.household!, savings_opening: amount }
   }),
   joinHousehold: vi.fn(async (code: string, displayName: string) => {
     if (code !== VALID_INVITE_CODE) throw databaseError('invalid_invite_code')

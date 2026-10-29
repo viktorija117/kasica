@@ -15,6 +15,7 @@ import {
   monthBalance,
   monthSummary,
   monthTotalsOf,
+  savingsBalance,
   splitByNecessity,
   sumByDay,
   sumByPayer,
@@ -78,6 +79,8 @@ export function useSaveMonthSetting() {
  * lists (which already include optimistic expenses) and earlier months from `month_totals`.
  */
 export function useMonthSummary(month: MonthKey) {
+  // `?? 0` keeps Home working while the savings_opening migration is not applied yet.
+  const savingsOpening = useHousehold().savings_opening ?? 0
   const totals = useMonthTotals()
   const settings = useMonthSettings()
   const categories = useCategories()
@@ -102,7 +105,8 @@ export function useMonthSummary(month: MonthKey) {
     }
     const today = todayKey()
     const live = monthTotalsOf(month, { incomes, expenses, savings })
-    const balance = monthBalance(withMonthTotals(totals.data, live), settings.data, month)
+    const allTotals = withMonthTotals(totals.data, live)
+    const balance = monthBalance(allTotals, settings.data, month)
     const saved = settings.data.find((row) => row.month === month)
     const setting: MonthSettingInput = saved
       ? { carry_enabled: saved.carry_enabled, carry_override: saved.carry_override }
@@ -112,6 +116,7 @@ export function useMonthSummary(month: MonthKey) {
       summary: monthSummary(balance, expenses, today),
       comparison: compareWithPrevious(month, expenses, previousExpenses, today),
       setting,
+      savings: savingsBalance(savingsOpening, allTotals, month),
       spending: {
         byCategory,
         top: topCategory(byCategory),
@@ -125,6 +130,7 @@ export function useMonthSummary(month: MonthKey) {
     }
   }, [
     month,
+    savingsOpening,
     totals.data,
     settings.data,
     categories.data,

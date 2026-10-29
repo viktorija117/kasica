@@ -50,3 +50,9 @@ export async function joinHousehold(code: string, displayName: string): Promise<
   if (error) throw error
   return data
 }
+
+/** "Početno stanje štednje": what the household had saved before using the app. */
+export async function updateSavingsOpening(householdId: string, amount: number): Promise<void> {
+  const { error } = await supabase.from('households').update({ savings_opening: amount }).eq('id', householdId)
+  if (error) throw error
+}

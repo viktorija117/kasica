@@ -26,7 +26,7 @@ export function Home() {
 
       {data ? (
         <>
-          <BalanceCards summary={data.summary} setting={data.setting} />
+          <BalanceCards summary={data.summary} setting={data.setting} savings={data.savings} />
           <div className="mt-3 empty:hidden">
             <DueThisMonth month={month} />
           </div>
