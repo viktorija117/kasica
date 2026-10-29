@@ -305,6 +305,7 @@ export const sr = {
     unknownCategory: 'Nepoznata kategorija',
     archived: 'arhivirana',
     cellLabel: (month: string, category: string, amount: string) => `${month}, ${category}: ${amount}`,
+    categoryMonths: (category: string) => `${category}: po mesecima`,
     statsTitle: 'Godina u brojevima',
     totalSpent: 'Ukupno potrošeno',
     totalSaved: 'Ukupno ušteđeno',

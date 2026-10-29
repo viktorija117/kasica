@@ -2,27 +2,25 @@ import type { Category } from '../data/categories'
 import { sr } from '../i18n/sr'
 import type { YearOverview } from '../lib/budget'
 import { formatAmount, formatRSD } from '../lib/money'
-import { categoryLabel, fullMonth, shortMonth, yearTable } from './yearTable'
+import { YearCategoryList } from './YearCategoryList'
+import { categoryColor, categoryLabel, cellBackground, fullMonth, shortMonth, yearTable } from './yearTable'
 
 type Props = { overview: YearOverview<Category> }
 
-const NEUTRAL_COLOR = 'var(--text-muted)'
-
-/** Cell background: the category colour, stronger the closer the month is to its biggest. */
-function cellBackground(color: string, intensity: number): string | undefined {
-  if (intensity <= 0) return undefined
-  const pct = Math.round(12 + intensity * 58)
-  return `color-mix(in srgb, ${color} ${pct}%, transparent)`
-}
-
-/** Months × categories, every category with spending in the year (archived ones too). */
+/**
+ * Months × categories, every category with spending in the year (archived ones too).
+ * A phone gets a list with a strip per category instead of the wide table.
+ */
 export function YearCategoryHeatmap({ overview }: Props) {
   const { categories } = overview
 
   return (
     <section aria-label={sr.year.categoriesTitle} className="rounded-3xl border border-border bg-surface p-4">
       <h2 className="text-sm font-medium text-text-muted">{sr.year.categoriesTitle}</h2>
-      <div className={yearTable.wrap}>
+      <div className="sm:hidden">
+        <YearCategoryList categories={categories} months={overview.months} />
+      </div>
+      <div className={`${yearTable.wrap} hidden sm:block`}>
         <table className={yearTable.table}>
           <thead>
             <tr>
@@ -54,7 +52,7 @@ export function YearCategoryHeatmap({ overview }: Props) {
                       key={cell.categoryId}
                       title={sr.year.cellLabel(fullMonth(month), categoryLabel(column), formatRSD(cell.total))}
                       style={{
-                        backgroundColor: cellBackground(column.category?.color ?? NEUTRAL_COLOR, cell.intensity),
+                        backgroundColor: cellBackground(categoryColor(column), cell.intensity),
                       }}
                       className={`${yearTable.cell} border-l-2 border-l-surface`}
                     >

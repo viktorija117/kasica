@@ -11,6 +11,8 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
+      // Registered from src/pwa.ts, which also reloads the app when a new version arrives.
+      injectRegister: false,
       includeAssets: ['favicon.svg', 'icons/apple-touch-icon-180x180.png'],
       manifest: {
         name: 'Kasica',

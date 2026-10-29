@@ -26,3 +26,15 @@ export function categoryLabel(column: YearCategory<Category> | undefined): strin
   const category = column?.category
   return category ? `${category.emoji} ${category.name}` : sr.year.unknownCategory
 }
+
+/** Colour of a category in the heatmap; grey when the category is unknown. */
+export function categoryColor(column: YearCategory<Category>): string {
+  return column.category?.color ?? 'var(--text-muted)'
+}
+
+/** Cell background: the category colour, stronger the closer the month is to its biggest. */
+export function cellBackground(color: string, intensity: number): string | undefined {
+  if (intensity <= 0) return undefined
+  const pct = Math.round(12 + intensity * 58)
+  return `color-mix(in srgb, ${color} ${pct}%, transparent)`
+}

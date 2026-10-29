@@ -79,6 +79,24 @@ describe('Year', () => {
     expect(cellsOf(heatmap, /UKUPNO/)).toEqual(['60.000', '2.500', '1.500'])
   })
 
+  it('on a phone, a tap on a category shows its months', async () => {
+    const user = userEvent.setup()
+    await openYear()
+    const heatmap = screen.getByRole('region', { name: 'Potrošnja po kategorijama' })
+
+    const fastFood = within(heatmap).getByRole('button', { name: '🍟 Brza hrana: po mesecima' })
+    expect(fastFood).toHaveTextContent(rsd('2.500'))
+    const monthsId = fastFood.getAttribute('aria-controls')!
+    expect(document.getElementById(monthsId)).not.toBeInTheDocument()
+
+    await user.click(fastFood)
+    expect(fastFood).toHaveAttribute('aria-expanded', 'true')
+    const months = document.getElementById(monthsId)!
+    expect(within(months).getByTitle('Septembar').closest('div')).toHaveTextContent('Sep2.000')
+    expect(within(months).getByTitle('Oktobar').closest('div')).toHaveTextContent('Okt500')
+    expect(within(months).getByTitle('Januar').closest('div')).toHaveTextContent('Jan—')
+  })
+
   it('sums up the year', async () => {
     await openYear()
     const stats = screen.getByRole('region', { name: 'Godina u brojevima' })
