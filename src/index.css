@@ -16,6 +16,7 @@
   --on-primary: #ffffff;
   --danger: #c0392b;
   --danger-soft: #fbe5e1;
+  --on-danger: #ffffff;
   --warning: #e07a10;
   --accent: #6c5ce7;
   --backdrop: rgb(20 26 24 / 0.45);
@@ -40,6 +41,7 @@
     --on-primary: #0b1a16;
     --danger: #ff8a7a;
     --danger-soft: #3a1f1b;
+    --on-danger: #2a0c07;
     --warning: #ffb05c;
     --accent: #a99cf5;
     --backdrop: rgb(0 0 0 / 0.6);
@@ -63,6 +65,7 @@
   --color-on-primary: var(--on-primary);
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
+  --color-on-danger: var(--on-danger);
   --color-warning: var(--warning);
   --color-accent: var(--accent);
   --color-backdrop: var(--backdrop);

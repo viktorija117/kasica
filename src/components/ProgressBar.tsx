@@ -6,13 +6,15 @@ type Props = {
   color?: string
   /** `warning` and `danger` override `color`. */
   tone?: 'normal' | 'warning' | 'danger'
+  /** Keep the bar in its own colour above 1, e.g. on a card that is already red. */
+  keepColorWhenOver?: boolean
   className?: string
 }
 
 const tones = { normal: '', warning: 'text-warning', danger: 'text-danger' }
 
-export function ProgressBar({ value, label, color, tone = 'normal', className = '' }: Props) {
-  const over = value > 1
+export function ProgressBar({ value, label, color, tone = 'normal', keepColorWhenOver = false, className = '' }: Props) {
+  const over = value > 1 && !keepColorWhenOver
   const width = `${Math.min(Math.max(value, 0), 1) * 100}%`
   return (
     <div

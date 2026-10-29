@@ -116,7 +116,8 @@ describe('Year', () => {
     const user = userEvent.setup()
     await openYear()
 
-    await user.click(screen.getByRole('link', { name: 'Septembar: otvori Početnu' }))
+    // The phone list comes first; the laptop table has the same link.
+    await user.click(screen.getAllByRole('link', { name: 'Septembar: otvori Početnu' })[0])
 
     const opening = await screen.findByRole('region', { name: 'Početno stanje' })
     expect(screen.getByText('Septembar 2026')).toBeInTheDocument()

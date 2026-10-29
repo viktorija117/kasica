@@ -28,16 +28,20 @@ export function BalanceCards({ summary, setting }: Props) {
   const saveSetting = useSaveMonthSetting()
   const allowance = allowanceText(summary)
   const used = sr.home.used(formatPercent(summary.usedPct))
+  const overspent = summary.remaining < 0
 
   const toggleCarry = (carryEnabled: boolean) =>
     saveSetting.mutate({ month: summary.month, input: { ...setting, carry_enabled: carryEnabled } })
 
   return (
     <div className="flex flex-col gap-3">
-      <section aria-label={sr.home.remaining} className="@container rounded-3xl bg-primary p-6 text-on-primary shadow-sm">
+      <section
+        aria-label={sr.home.remaining}
+        className={`@container rounded-3xl p-6 shadow-sm ${overspent ? 'bg-danger text-on-danger' : 'bg-primary text-on-primary'}`}
+      >
         <h2 className="text-sm font-medium opacity-85">{sr.home.remaining}</h2>
         <Amount value={summary.remaining} size="xl" className="mt-1" />
-        <ProgressBar value={summary.usedPct} label={used} className="mt-4" />
+        <ProgressBar value={summary.usedPct} label={used} keepColorWhenOver className="mt-4" />
         <p className="mt-1.5 text-sm opacity-85">{used}</p>
         {allowance && <p className="mt-3 text-sm font-medium">{allowance}</p>}
       </section>
@@ -65,8 +69,8 @@ export function BalanceCards({ summary, setting }: Props) {
       </StatCard>
 
       <div className="grid grid-cols-2 gap-3">
-        <StatCard label={sr.home.spent} value={summary.spent} />
-        <StatCard label={sr.home.saved} value={summary.saved} />
+        <StatCard label={sr.home.spent} value={summary.spent} size="md" />
+        <StatCard label={sr.home.saved} value={summary.saved} size="md" />
       </div>
 
       <CarrySheet

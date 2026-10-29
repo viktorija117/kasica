@@ -4,13 +4,17 @@ import { homePath } from '../hooks/useSelectedMonth'
 import { sr } from '../i18n/sr'
 import type { YearOverview } from '../lib/budget'
 import { formatRSD } from '../lib/money'
+import { YearMonthsList } from './YearMonthsList'
 import { categoryLabel, fullMonth, yearTable } from './yearTable'
 
 type Props = { overview: YearOverview<Category> }
 
 const columns = [sr.year.opening, sr.year.spent, sr.year.saved, sr.year.remaining] as const
 
-/** The 12 months with their balances and a UKUPNO row; a tap on a month opens it on Home. */
+/**
+ * The 12 months with their balances and a UKUPNO row; a tap on a month opens it on Home.
+ * A phone gets a list instead of the wide table.
+ */
 export function YearMonthsTable({ overview }: Props) {
   const navigate = useNavigate()
   const byId = new Map(overview.categories.map((column) => [column.categoryId, column]))
@@ -19,7 +23,10 @@ export function YearMonthsTable({ overview }: Props) {
   return (
     <section aria-label={sr.year.monthsTitle} className="rounded-3xl border border-border bg-surface p-4">
       <h2 className="text-sm font-medium text-text-muted">{sr.year.monthsTitle}</h2>
-      <div className={yearTable.wrap}>
+      <div className="sm:hidden">
+        <YearMonthsList overview={overview} />
+      </div>
+      <div className={`${yearTable.wrap} hidden sm:block`}>
         <table className={yearTable.table}>
           <thead>
             <tr>

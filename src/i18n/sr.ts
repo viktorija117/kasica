@@ -409,6 +409,7 @@ export const sr = {
   },
 
   settings: {
+    version: (version: string) => `Verzija ${version}`,
     title: 'Podešavanja',
     household: 'Domaćinstvo',
     members: 'Članovi',

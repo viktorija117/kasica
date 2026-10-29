@@ -2,7 +2,6 @@ import type { ReactNode } from 'react'
 import { sr } from '../i18n/sr'
 import type { MonthSummary, SpentComparison } from '../lib/budget'
 import { formatPercent, formatRSD } from '../lib/money'
-import { Amount } from './Amount'
 
 type Props = {
   summary: MonthSummary
@@ -22,11 +21,11 @@ function comparisonTone(comparison: SpentComparison): string {
   return comparison.diff > 0 ? 'text-danger' : 'text-primary'
 }
 
-function Tile({ label, children }: { label: string; children: ReactNode }) {
+function Row({ label, children, last = false }: { label: ReactNode; children: ReactNode; last?: boolean }) {
   return (
-    <div className="@container min-w-0 rounded-2xl bg-surface-muted px-3 py-2.5">
-      <dt className="text-xs text-text-muted">{label}</dt>
-      <dd className="mt-0.5">{children}</dd>
+    <div className={`flex items-baseline justify-between gap-3 py-3 ${last ? '' : 'border-b border-border'}`}>
+      <dt className="text-sm">{label}</dt>
+      <dd className="text-right text-sm">{children}</dd>
     </div>
   )
 }
@@ -36,43 +35,37 @@ export function MonthStats({ summary, comparison }: Props) {
   const tone = comparisonTone(comparison)
 
   return (
-    <div className="mt-3 flex flex-col gap-3">
-      <dl className={`grid gap-2 ${summary.spentToday === null ? 'grid-cols-2' : 'grid-cols-3'}`}>
-        {summary.spentToday !== null && (
-          <Tile label={sr.home.today}>
-            <Amount value={summary.spentToday} size="sm" />
-          </Tile>
-        )}
-        <Tile label={sr.home.avgPerDay}>
-          <Amount value={summary.avgPerDay} size="sm" />
-        </Tile>
-        <Tile label={sr.home.purchases}>
-          <span className="amount block text-base">{summary.purchases}</span>
-        </Tile>
-      </dl>
-
-      <dl className="rounded-3xl border border-border bg-surface px-4 py-1">
-        <div className="flex items-baseline justify-between gap-3 border-b border-border py-3">
-          <dt className="text-sm">{sr.home.unneeded}</dt>
-          <dd className="text-right text-sm">
-            <span className="amount whitespace-nowrap">{formatRSD(summary.unneeded)}</span>
-            <span className="block text-xs text-text-muted">
-              {sr.home.unneededShare(formatPercent(summary.unneededPct))}
-            </span>
-          </dd>
-        </div>
-        <div className="flex items-baseline justify-between gap-3 py-3">
-          <dt className="text-sm">
+    <dl className="mt-3 rounded-3xl border border-border bg-surface px-4 py-1">
+      {summary.spentToday !== null && (
+        <Row label={sr.home.today}>
+          <span className="amount whitespace-nowrap">{formatRSD(summary.spentToday)}</span>
+        </Row>
+      )}
+      <Row label={sr.home.avgPerDay}>
+        <span className="amount whitespace-nowrap">{formatRSD(summary.avgPerDay)}</span>
+      </Row>
+      <Row label={sr.home.purchases}>
+        <span className="amount">{summary.purchases}</span>
+      </Row>
+      <Row label={sr.home.unneeded}>
+        <span className="amount whitespace-nowrap">{formatRSD(summary.unneeded)}</span>
+        <span className="block text-xs text-text-muted">{sr.home.unneededShare(formatPercent(summary.unneededPct))}</span>
+      </Row>
+      <Row
+        last
+        label={
+          <>
             {sr.home.comparison}
             {comparison.throughDay !== null && (
               <span className="block text-xs text-text-muted">
                 {sr.home.comparisonSamePeriod(comparison.throughDay)}
               </span>
             )}
-          </dt>
-          <dd className={`text-right text-sm font-medium ${tone}`}>{comparisonText(comparison)}</dd>
-        </div>
-      </dl>
-    </div>
+          </>
+        }
+      >
+        <span className={`font-medium ${tone}`}>{comparisonText(comparison)}</span>
+      </Row>
+    </dl>
   )
 }

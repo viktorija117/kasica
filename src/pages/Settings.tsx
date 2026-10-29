@@ -72,6 +72,8 @@ export function Settings() {
           {sr.settings.signOut}
         </Button>
       </SettingsSection>
+
+      <p className="mt-2 text-center text-xs text-text-muted">{sr.settings.version(__APP_VERSION__)}</p>
     </>
   )
 }
