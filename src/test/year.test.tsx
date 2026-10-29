@@ -4,6 +4,7 @@ import { writeFile } from 'xlsx'
 import userEvent from '@testing-library/user-event'
 import { resetBackend, seedExpense, seedIncome, seedSaving } from './fakeBackend'
 import { renderApp } from './renderApp'
+import { amountText } from './amount'
 
 vi.mock('../data/auth', async () => (await import('./fakeBackend')).fakeAuth)
 vi.mock('../data/households', async () => (await import('./fakeBackend')).fakeHouseholds)
@@ -101,8 +102,8 @@ describe('Year', () => {
 
     const opening = await screen.findByRole('region', { name: 'Početno stanje' })
     expect(screen.getByText('Septembar 2026')).toBeInTheDocument()
-    expect(within(opening).getByText(rsd('100.000'))).toBeInTheDocument()
-    expect(within(screen.getByRole('region', { name: 'Preostalo' })).getByText(rsd('28.000'))).toBeInTheDocument()
+    expect(within(opening).getByText(amountText(rsd('100.000')))).toBeInTheDocument()
+    expect(within(screen.getByRole('region', { name: 'Preostalo' })).getByText(amountText(rsd('28.000')))).toBeInTheDocument()
   })
 
   it('switches years and shows an empty year', async () => {

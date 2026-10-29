@@ -1,6 +1,8 @@
+import type { ReactNode } from 'react'
 import { sr } from '../i18n/sr'
 import type { MonthSummary, SpentComparison } from '../lib/budget'
 import { formatPercent, formatRSD } from '../lib/money'
+import { Amount } from './Amount'
 
 type Props = {
   summary: MonthSummary
@@ -20,11 +22,11 @@ function comparisonTone(comparison: SpentComparison): string {
   return comparison.diff > 0 ? 'text-danger' : 'text-primary'
 }
 
-function Tile({ label, value }: { label: string; value: string }) {
+function Tile({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="rounded-2xl bg-surface-muted px-3 py-2.5">
+    <div className="@container min-w-0 rounded-2xl bg-surface-muted px-3 py-2.5">
       <dt className="text-xs text-text-muted">{label}</dt>
-      <dd className="amount mt-0.5 text-base">{value}</dd>
+      <dd className="mt-0.5">{children}</dd>
     </div>
   )
 }
@@ -36,16 +38,24 @@ export function MonthStats({ summary, comparison }: Props) {
   return (
     <div className="mt-3 flex flex-col gap-3">
       <dl className={`grid gap-2 ${summary.spentToday === null ? 'grid-cols-2' : 'grid-cols-3'}`}>
-        {summary.spentToday !== null && <Tile label={sr.home.today} value={formatRSD(summary.spentToday)} />}
-        <Tile label={sr.home.avgPerDay} value={formatRSD(summary.avgPerDay)} />
-        <Tile label={sr.home.purchases} value={String(summary.purchases)} />
+        {summary.spentToday !== null && (
+          <Tile label={sr.home.today}>
+            <Amount value={summary.spentToday} size="sm" className="block" />
+          </Tile>
+        )}
+        <Tile label={sr.home.avgPerDay}>
+          <Amount value={summary.avgPerDay} size="sm" className="block" />
+        </Tile>
+        <Tile label={sr.home.purchases}>
+          <span className="amount block text-base">{summary.purchases}</span>
+        </Tile>
       </dl>
 
       <dl className="rounded-3xl border border-border bg-surface px-4 py-1">
         <div className="flex items-baseline justify-between gap-3 border-b border-border py-3">
           <dt className="text-sm">{sr.home.unneeded}</dt>
           <dd className="text-right text-sm">
-            <span className="amount">{formatRSD(summary.unneeded)}</span>
+            <span className="amount whitespace-nowrap">{formatRSD(summary.unneeded)}</span>
             <span className="block text-xs text-text-muted">
               {sr.home.unneededShare(formatPercent(summary.unneededPct))}
             </span>

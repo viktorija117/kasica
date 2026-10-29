@@ -39,7 +39,9 @@ export function CategoryDonut({ rows, spent }: Props) {
         </Pie>
       </PieChart>
       <div className="absolute inset-0 grid place-items-center">
-        <Amount value={spent} className="max-w-[7.5rem] text-center text-base" />
+        <div className="@container w-24 text-center">
+          <Amount value={spent} />
+        </div>
       </div>
     </div>
   )

@@ -2,6 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { fakeCategories, resetBackend, seedExpense, seedIncome } from './fakeBackend'
 import { renderApp } from './renderApp'
+import { amountText } from './amount'
 
 vi.mock('../data/auth', async () => (await import('./fakeBackend')).fakeAuth)
 vi.mock('../data/households', async () => (await import('./fakeBackend')).fakeHouseholds)
@@ -46,7 +47,7 @@ describe('spending on Home', () => {
   it('lists every category, archived included, and the list adds up to "Potrošeno"', async () => {
     const section = await openHome()
 
-    expect(within(region('Potrošeno')).getByText(rsd('3.500,50'))).toBeInTheDocument()
+    expect(within(region('Potrošeno')).getByText(amountText(rsd('3.500,50')))).toBeInTheDocument()
     const links = within(section).getAllByRole('link')
     expect(links.map((link) => link.getAttribute('aria-label'))).toEqual([
       'Brza hrana: prikaži troškove',

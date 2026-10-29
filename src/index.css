@@ -102,6 +102,13 @@
 }
 
 @layer base {
+  /* Nothing may make the page wider than the screen: Android Chrome would zoom the whole
+     app out to fit it. Wide tables scroll inside their own box instead. */
+  html,
+  body {
+    overflow-x: clip;
+  }
+
   html {
     -webkit-tap-highlight-color: transparent;
   }

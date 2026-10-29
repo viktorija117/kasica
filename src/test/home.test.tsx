@@ -10,6 +10,7 @@ import {
   seedSaving,
 } from './fakeBackend'
 import { renderApp } from './renderApp'
+import { amountText } from './amount'
 
 vi.mock('../data/auth', async () => (await import('./fakeBackend')).fakeAuth)
 vi.mock('../data/households', async () => (await import('./fakeBackend')).fakeHouseholds)
@@ -62,12 +63,12 @@ describe('Home', () => {
     await openHome()
 
     const opening = card('Početno stanje')
-    expect(within(opening).getByText(rsd('100.000'))).toBeInTheDocument()
+    expect(within(opening).getByText(amountText(rsd('100.000')))).toBeInTheDocument()
     expect(within(opening).getByText(`preneto ${rsd('30.000')} + prihodi ${rsd('70.000')}`)).toBeInTheDocument()
-    expect(within(card('Potrošeno')).getByText(rsd('21.500'))).toBeInTheDocument()
-    expect(within(card('Ušteđeno')).getByText(rsd('-5.000'))).toBeInTheDocument()
+    expect(within(card('Potrošeno')).getByText(amountText(rsd('21.500')))).toBeInTheDocument()
+    expect(within(card('Ušteđeno')).getByText(amountText(rsd('-5.000')))).toBeInTheDocument()
     // 100.000 − 21.500 − (−5.000)
-    expect(within(card('Preostalo')).getByText(rsd('83.500'))).toBeInTheDocument()
+    expect(within(card('Preostalo')).getByText(amountText(rsd('83.500')))).toBeInTheDocument()
     expect(within(card('Preostalo')).getByText('Iskorišćeno 22%')).toBeInTheDocument()
   })
 
@@ -92,7 +93,7 @@ describe('Home', () => {
     await openHome('/?m=2026-09')
 
     expect(within(card('Početno stanje')).getByText(`preneto ${rsd('0')} + prihodi ${rsd('100.000')}`)).toBeInTheDocument()
-    expect(within(card('Preostalo')).getByText(rsd('30.000'))).toBeInTheDocument()
+    expect(within(card('Preostalo')).getByText(amountText(rsd('30.000')))).toBeInTheDocument()
     expect(screen.queryByText('Danas')).not.toBeInTheDocument()
     expect(screen.queryByText(/Možeš da trošiš/)).not.toBeInTheDocument()
     // 60.000 / 30 days
@@ -116,20 +117,20 @@ describe('Home', () => {
       carry_override: 10396,
     })
     const opening = card('Početno stanje')
-    expect(within(opening).getByText(rsd('80.396'))).toBeInTheDocument()
+    expect(within(opening).getByText(amountText(rsd('80.396')))).toBeInTheDocument()
     expect(within(opening).getByText(/preneto 10\.396.*usklađeno ručno/)).toBeInTheDocument()
 
     // A fresh start (like reopening the app) reads the remembered value.
     cleanup()
     await openHome()
-    expect(within(card('Početno stanje')).getByText(rsd('80.396'))).toBeInTheDocument()
+    expect(within(card('Početno stanje')).getByText(amountText(rsd('80.396')))).toBeInTheDocument()
 
     // And it can go back to the automatic carry.
     await user.click(screen.getByRole('button', { name: 'Uskladi stanje' }))
     const again = await screen.findByRole('dialog', { name: 'Uskladi stanje' })
     expect(within(again).getByLabelText('Preneto')).toHaveValue('10396')
     await user.click(within(again).getByRole('button', { name: 'Vrati na automatski' }))
-    expect(within(card('Početno stanje')).getByText(rsd('100.000'))).toBeInTheDocument()
+    expect(within(card('Početno stanje')).getByText(amountText(rsd('100.000')))).toBeInTheDocument()
     expect(fakeMonthSettings.saveMonthSetting).toHaveBeenLastCalledWith('hh-1', '2026-10-01', {
       carry_enabled: true,
       carry_override: null,
@@ -145,7 +146,7 @@ describe('Home', () => {
     await user.click(toggle)
 
     expect(toggle).not.toBeChecked()
-    expect(within(card('Početno stanje')).getByText(rsd('70.000'))).toBeInTheDocument()
+    expect(within(card('Početno stanje')).getByText(amountText(rsd('70.000')))).toBeInTheDocument()
     expect(fakeMonthSettings.saveMonthSetting).toHaveBeenCalledWith('hh-1', '2026-10-01', {
       carry_enabled: false,
       carry_override: null,
@@ -162,8 +163,8 @@ describe('Home', () => {
     await user.click(within(sheet).getByRole('button', { name: 'Hrana' }))
     await user.click(within(sheet).getByRole('button', { name: 'Sačuvaj' }))
 
-    expect(within(card('Potrošeno')).getByText(rsd('22.000'))).toBeInTheDocument()
-    expect(within(card('Preostalo')).getByText(rsd('83.000'))).toBeInTheDocument()
+    expect(within(card('Potrošeno')).getByText(amountText(rsd('22.000')))).toBeInTheDocument()
+    expect(within(card('Preostalo')).getByText(amountText(rsd('83.000')))).toBeInTheDocument()
   })
 })
 
