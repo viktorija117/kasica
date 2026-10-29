@@ -1,4 +1,6 @@
-import { screen, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
+import type { WorkBook } from 'xlsx'
+import { writeFile } from 'xlsx'
 import userEvent from '@testing-library/user-event'
 import { resetBackend, seedExpense, seedIncome, seedSaving } from './fakeBackend'
 import { renderApp } from './renderApp'
@@ -14,6 +16,8 @@ vi.mock('../data/monthTotals', async () => (await import('./fakeBackend')).fakeM
 vi.mock('../data/recurring', async () => (await import('./fakeBackend')).fakeRecurring)
 vi.mock('../data/receipts', async () => (await import('./fakeBackend')).fakeReceipts)
 vi.mock('../data/monthCategoryTotals', async () => (await import('./fakeBackend')).fakeMonthCategoryTotals)
+vi.mock('../data/yearExport', async () => (await import('./fakeBackend')).fakeYearExport)
+vi.mock('xlsx', async (importOriginal) => ({ ...(await importOriginal<typeof import('xlsx')>()), writeFile: vi.fn() }))
 
 /** `1.234 RSD`; Testing Library turns the non-breaking space into a plain one. */
 const rsd = (amount: string) => `${amount} RSD`
@@ -111,5 +115,27 @@ describe('Year', () => {
 
     await user.click(screen.getByRole('button', { name: 'Ova godina' }))
     expect(await screen.findByRole('region', { name: 'Po mesecima' })).toBeInTheDocument()
+  })
+
+  it('exports the year to Excel with the same numbers', async () => {
+    const user = userEvent.setup()
+    await openYear()
+
+    await user.click(await screen.findByRole('button', { name: 'Izvezi u Excel' }))
+
+    await waitFor(() => expect(writeFile).toHaveBeenCalledOnce())
+    const [workbook, fileName] = vi.mocked(writeFile).mock.calls[0] as [WorkBook, string]
+    expect(fileName).toBe('Kasica 2026.xlsx')
+    expect(workbook.SheetNames).toEqual(['Troškovi', 'Prihodi', 'Štednja', 'Pregled po mesecima'])
+
+    const expenses = workbook.Sheets['Troškovi']
+    expect(expenses['!ref']).toBe('A1:H5')
+    expect(expenses.B4.v).toBe('Stara kategorija')
+    expect(expenses.F2.v).toBe('Ja')
+
+    const months = workbook.Sheets['Pregled po mesecima']
+    expect([months.A2.v, months.G2.v]).toEqual(['Septembar 2026', 28000])
+    expect([months.A3.v, months.B3.v, months.D3.v, months.G3.v]).toEqual(['Oktobar 2026', 28000, 98000, 96000])
+    expect([months.A4.v, months.E4.v]).toEqual(['UKUPNO', 64000])
   })
 })

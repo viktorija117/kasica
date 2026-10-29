@@ -465,6 +465,17 @@ export const fakeMonthCategoryTotals = {
   }),
 }
 
+// Same rows as fetchYearRows: the whole year, oldest first.
+export const fakeYearExport = {
+  fetchYearRows: vi.fn(async (_householdId: string, year: number) => {
+    const ofYear = <T extends { date: string; created_at: string }>(rows: T[]) =>
+      rows
+        .filter((row) => row.date.slice(0, 4) === String(year))
+        .sort((a, b) => a.date.localeCompare(b.date) || a.created_at.localeCompare(b.created_at))
+    return { expenses: ofYear(state.expenses), incomes: ofYear(state.incomes), savings: ofYear(state.savings) }
+  }),
+}
+
 export function seedIncome(input: Partial<IncomeInput> & Pick<IncomeInput, 'date' | 'amount'>) {
   const income = makeIncome({ source: 'Plata', received_by: 'user-me', ...input })
   state.incomes.push(income)

@@ -1,1 +1,23 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="16" fill="#1f8a70"/><text x="32" y="44" font-size="34" text-anchor="middle">🐷</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#1f8a70"/>
+  <!-- coin -->
+  <circle cx="256" cy="118" r="44" fill="#f2c94c"/>
+  <rect x="236" y="98" width="40" height="40" rx="6" fill="#e0b13a"/>
+  <!-- legs -->
+  <rect x="166" y="330" width="44" height="70" rx="16" fill="#e98fa3"/>
+  <rect x="302" y="330" width="44" height="70" rx="16" fill="#e98fa3"/>
+  <!-- ear -->
+  <path d="M190 200 L176 140 L236 178 Z" fill="#e98fa3"/>
+  <!-- body -->
+  <ellipse cx="250" cy="270" rx="150" ry="112" fill="#f4a7b9"/>
+  <!-- tail -->
+  <path d="M396 250 q30 -16 22 -40" stroke="#f4a7b9" stroke-width="12" fill="none" stroke-linecap="round"/>
+  <!-- snout -->
+  <ellipse cx="112" cy="282" rx="40" ry="34" fill="#e98fa3"/>
+  <circle cx="102" cy="282" r="7" fill="#b55a70"/>
+  <circle cx="124" cy="282" r="7" fill="#b55a70"/>
+  <!-- eye -->
+  <circle cx="176" cy="238" r="10" fill="#3a2a30"/>
+  <!-- coin slot -->
+  <rect x="226" y="172" width="64" height="12" rx="6" fill="#b55a70"/>
+</svg>

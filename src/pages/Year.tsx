@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { PageTitle } from '../components/PageTitle'
 import { QueryStatus } from '../components/QueryStatus'
+import { YearExport } from '../components/YearExport'
 import { YearCategoryHeatmap } from '../components/YearCategoryHeatmap'
 import { YearMonthsTable } from '../components/YearMonthsTable'
 import { YearStats } from '../components/YearStats'
@@ -31,6 +32,7 @@ export function Year() {
           <Suspense fallback={<div className="h-[17rem] rounded-3xl border border-border bg-surface" />}>
             <YearChart points={data.chart} />
           </Suspense>
+          <YearExport year={year} overview={data.overview} />
         </div>
       ) : (
         <p className="rounded-3xl border border-dashed border-border p-4 text-center text-sm text-text-muted">
