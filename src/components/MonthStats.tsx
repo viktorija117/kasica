@@ -40,11 +40,11 @@ export function MonthStats({ summary, comparison }: Props) {
       <dl className={`grid gap-2 ${summary.spentToday === null ? 'grid-cols-2' : 'grid-cols-3'}`}>
         {summary.spentToday !== null && (
           <Tile label={sr.home.today}>
-            <Amount value={summary.spentToday} size="sm" className="block" />
+            <Amount value={summary.spentToday} size="sm" />
           </Tile>
         )}
         <Tile label={sr.home.avgPerDay}>
-          <Amount value={summary.avgPerDay} size="sm" className="block" />
+          <Amount value={summary.avgPerDay} size="sm" />
         </Tile>
         <Tile label={sr.home.purchases}>
           <span className="amount block text-base">{summary.purchases}</span>

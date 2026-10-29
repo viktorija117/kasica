@@ -28,15 +28,15 @@ export function YearStats({ overview }: Props) {
     <section aria-label={sr.year.statsTitle}>
       <h2 className="sr-only">{sr.year.statsTitle}</h2>
       <dl className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-        <Tile label={sr.year.totalSpent} value={<Amount value={overview.total.spent} size="sm" className="block" />} />
-        <Tile label={sr.year.totalSaved} value={<Amount value={overview.total.saved} size="sm" className="block" />} />
+        <Tile label={sr.year.totalSpent} value={<Amount value={overview.total.spent} size="sm" />} />
+        <Tile label={sr.year.totalSaved} value={<Amount value={overview.total.saved} size="sm" />} />
         <Tile
           label={sr.year.avgMonthly}
           value={
             overview.avgMonthlySpent === null ? (
               sr.year.noValue
             ) : (
-              <Amount value={overview.avgMonthlySpent} size="sm" className="block" />
+              <Amount value={overview.avgMonthlySpent} size="sm" />
             )
           }
           detail={monthsWithSpending > 0 ? sr.year.avgMonthlyDetail(monthsWithSpending) : undefined}

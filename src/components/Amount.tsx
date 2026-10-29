@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react'
+import { useFitText } from '../hooks/useFitText'
 import { sr } from '../i18n/sr'
 import { formatAmount } from '../lib/money'
 
@@ -30,18 +30,18 @@ type Props = {
 }
 
 /**
- * A money value that shrinks to fit the width of the nearest `@container` (a card or tile),
- * so long amounts never spill out of it on a narrow phone.
+ * A money value on its own line that shrinks to fit the width of the nearest `@container`
+ * (a card or tile), so long amounts never spill out of it on a narrow phone.
  */
 export function Amount({ value, size = 'md', className = '' }: Props) {
   const number = formatAmount(value)
   const { rem, currency } = sizes[size]
-  const style: CSSProperties = {
-    fontSize: `min(${rem}rem, calc(100cqi / ${widthInEm(number, currency).toFixed(2)}))`,
-  }
+  // The estimate sizes it before paint; the measurement then fixes what the estimate missed.
+  const fontSize = `min(${rem}rem, calc(100cqi / ${widthInEm(number, currency).toFixed(2)}))`
+  const ref = useFitText<HTMLSpanElement>(fontSize)
 
   return (
-    <span className={`amount whitespace-nowrap ${className}`} style={style}>
+    <span ref={ref} className={`amount block whitespace-nowrap ${className}`} style={{ fontSize }}>
       {number}
       {/* Same text as `formatRSD`, so the amount reads and copies as "1.234 RSD". */}
       <span className="font-semibold opacity-70" style={{ fontSize: `${currency}em` }}>

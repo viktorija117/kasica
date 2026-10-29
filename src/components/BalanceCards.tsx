@@ -36,7 +36,7 @@ export function BalanceCards({ summary, setting }: Props) {
     <div className="flex flex-col gap-3">
       <section aria-label={sr.home.remaining} className="@container rounded-3xl bg-primary p-6 text-on-primary shadow-sm">
         <h2 className="text-sm font-medium opacity-85">{sr.home.remaining}</h2>
-        <Amount value={summary.remaining} size="xl" className="mt-1 block" />
+        <Amount value={summary.remaining} size="xl" className="mt-1" />
         <ProgressBar value={summary.usedPct} label={used} className="mt-4" />
         <p className="mt-1.5 text-sm opacity-85">{used}</p>
         {allowance && <p className="mt-3 text-sm font-medium">{allowance}</p>}
