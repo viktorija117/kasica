@@ -90,7 +90,7 @@ function CategoryForm({ editing, categories, onArchive, onRestore, onDone }: For
     }
     // Optimistic: the change shows everywhere at once, so the sheet can close right away.
     if (editing) save.mutate({ id: editing.id, input: result.input })
-    else save.mutate({ input: result.input, sort: nextSort(categories) })
+    else save.mutate({ newId: crypto.randomUUID(), input: result.input, sort: nextSort(categories) })
     onDone()
   }
 

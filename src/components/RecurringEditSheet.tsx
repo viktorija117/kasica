@@ -88,7 +88,7 @@ function RecurringForm({ editing, recurring, categories, onDelete, onDone }: For
     }
     // Optimistic: the list and Home update at once, so the sheet can close right away.
     if (editing) save.mutate({ id: editing.id, input: result.input })
-    else save.mutate({ input: result.input, sort: nextSort(recurring) })
+    else save.mutate({ newId: crypto.randomUUID(), input: result.input, sort: nextSort(recurring) })
     onDone()
   }
 

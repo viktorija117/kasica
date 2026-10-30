@@ -19,7 +19,7 @@ type Props = {
 
 function allowanceText(summary: MonthSummary): string | null {
   if (summary.dailyAllowance === null || summary.daysLeft === null) return null
-  if (summary.dailyAllowance <= 0) return sr.home.overspent
+  if (summary.remaining <= 0) return sr.home.overspent
   return sr.home.allowance(formatRSD(summary.dailyAllowance), summary.daysLeft)
 }
 
@@ -31,6 +31,8 @@ export function BalanceCards({ summary, setting, savings }: Props) {
   const allowance = allowanceText(summary)
   const used = sr.home.used(formatPercent(summary.usedPct))
   const overspent = summary.remaining < 0
+  // With nothing (or less than nothing) to start from, a share of it means nothing.
+  const showUsed = summary.opening > 0
 
   const toggleCarry = (carryEnabled: boolean) =>
     saveSetting.mutate({ month: summary.month, input: { ...setting, carry_enabled: carryEnabled } })
@@ -43,8 +45,12 @@ export function BalanceCards({ summary, setting, savings }: Props) {
       >
         <h2 className="text-sm font-medium opacity-85">{sr.home.remaining}</h2>
         <Amount value={summary.remaining} size="xl" className="mt-1" />
-        <ProgressBar value={summary.usedPct} label={used} keepColorWhenOver className="mt-4" />
-        <p className="mt-1.5 text-sm opacity-85">{used}</p>
+        {showUsed && (
+          <>
+            <ProgressBar value={summary.usedPct} label={used} keepColorWhenOver className="mt-4" />
+            <p className="mt-1.5 text-sm opacity-85">{used}</p>
+          </>
+        )}
         {allowance && <p className="mt-3 text-sm font-medium">{allowance}</p>}
       </section>
 

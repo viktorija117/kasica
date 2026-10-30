@@ -7,7 +7,7 @@
 //   200 { html, specifications }   specifications is null when the items request failed
 // POST { warm: true }
 //   200 { ok: true }   sent when the scanner opens, so the function is already running when
-//                      the QR code is read
+//                      the QR code is read; only the token claims are checked
 //   400 { error: "invalid_receipt_url" }
 //   401 { error: "not_authenticated" }
 //   404 { error: "receipt_not_found" }
@@ -20,6 +20,7 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Expose-Headers': 'Server-Timing',
 }
 
 // The site answers browsers only, so the requests look like one.
@@ -29,11 +30,10 @@ const browserHeaders = {
   'Accept-Language': 'sr-RS,sr;q=0.9',
 }
 
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  })
+function json(body: unknown, status = 200, timings: string[] = []): Response {
+  const headers: Record<string, string> = { ...corsHeaders, 'Content-Type': 'application/json' }
+  if (timings.length > 0) headers['Server-Timing'] = timings.join(', ')
+  return new Response(JSON.stringify(body), { status, headers })
 }
 
 /** Only https://suf.purs.gov.rs/v/?vl=… links; the URL is rebuilt so nothing else gets through. */
@@ -49,6 +49,27 @@ function receiptUrl(value: unknown): string | null {
   const vl = url.search.match(/[?&]vl=([^&#]+)/)?.[1]
   if (!vl || !/^[A-Za-z0-9%+/=_-]+$/.test(vl)) return null
   return `https://${HOST}/v/?vl=${vl}`
+}
+
+/**
+ * Whether the token claims to be a signed-in user's and has not expired. The gateway has already
+ * verified its signature (verify_jwt = true in supabase/config.toml), so this rejects the public
+ * anon key at once, before anything is sent to the tax office site. It is not the full check:
+ * `isSignedIn` still asks Supabase Auth before the receipt is handed out.
+ */
+function claimsSignedIn(request: Request): boolean {
+  const token = request.headers.get('Authorization')?.match(/^Bearer\s+(.+)$/i)?.[1]
+  const payload = token?.split('.')[1]
+  if (!payload) return false
+  try {
+    const claims = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/'))) as {
+      role?: unknown
+      exp?: unknown
+    }
+    return claims.role === 'authenticated' && typeof claims.exp === 'number' && claims.exp * 1000 > Date.now()
+  } catch {
+    return false
+  }
 }
 
 /**
@@ -130,32 +151,30 @@ Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   if (request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405)
 
+  if (!claimsSignedIn(request)) return json({ error: 'not_authenticated' }, 401)
+
   const body = await request.json().catch(() => null)
-  // The gateway has already checked the token (verify_jwt); nothing is read for a warm-up.
   if (body?.warm === true) return json({ ok: true })
 
   const url = receiptUrl(body?.url)
   if (!url) return json({ error: 'invalid_receipt_url' }, 400)
 
-  // The sign-in check and the slow tax office site run at the same time; the receipt is only
-  // handed out once the check has passed.
+  // The full sign-in check and the slow tax office site run at the same time; the receipt is
+  // only handed out once the check has passed.
   const timings: string[] = []
   const signedIn = timed(timings, 'auth', isSignedIn(request))
   const receipt = fetchReceipt(url, timings).then(
     (value) => ({ value }),
     (error: unknown) => ({ error }),
   )
-  if (!(await signedIn)) return json({ error: 'not_authenticated' }, 401)
+  if (!(await signedIn)) return json({ error: 'not_authenticated' }, 401, timings)
 
   const result = await receipt
-  const response = 'value' in result ? json(result.value) : failure(result.error)
-  response.headers.set('Server-Timing', timings.join(', '))
-  response.headers.set('Access-Control-Expose-Headers', 'Server-Timing')
-  return response
+  return 'value' in result ? json(result.value, 200, timings) : failure(result.error, timings)
 })
 
-function failure(error: unknown): Response {
-  if (error instanceof NotFound) return json({ error: 'receipt_not_found' }, 404)
+function failure(error: unknown, timings: string[]): Response {
+  if (error instanceof NotFound) return json({ error: 'receipt_not_found' }, 404, timings)
   console.error('fiscal-receipt', error)
-  return json({ error: 'receipt_site_unavailable' }, 502)
+  return json({ error: 'receipt_site_unavailable' }, 502, timings)
 }

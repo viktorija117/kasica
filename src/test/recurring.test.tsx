@@ -143,6 +143,7 @@ describe('Settings → Ponavljajući troškovi', () => {
       amount: 2999,
       day_of_month: 31,
       necessity: 'needed',
+      id: expect.any(String),
       sort: 1,
     })
     expect(await screen.findByText('2.999 RSD · svakog 31.')).toBeInTheDocument()

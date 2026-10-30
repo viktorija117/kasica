@@ -30,8 +30,13 @@ export function ReceiptScanner({ onUrl, onManual }: Props) {
 
   const status = useQrScanner(videoRef, (text) => {
     const url = normalizeReceiptUrl(text)
-    if (url) onUrl(url)
-    else setWrongCode(true)
+    if (!url) {
+      setWrongCode(true)
+      return
+    }
+    // A short buzz tells the user the receipt was read and they can lower the phone.
+    navigator.vibrate?.(40)
+    onUrl(url)
   })
   const cameraOff = status === 'denied' || status === 'unavailable'
 

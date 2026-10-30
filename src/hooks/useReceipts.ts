@@ -21,6 +21,8 @@ export function useSavedReceipt(url: string) {
   return useQuery({
     queryKey: queryKeys.savedReceipt(householdId, url),
     queryFn: () => findReceiptByUrl(householdId, url),
+    // Deleting a receipt's expenses removes the receipt, so an old answer may be wrong.
+    staleTime: 0,
   })
 }
 

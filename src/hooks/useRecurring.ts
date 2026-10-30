@@ -52,15 +52,18 @@ function useRecurringMutation<Vars>(
   })
 }
 
-type SaveVars = { id: string; input: RecurringInput } | { id?: undefined; input: RecurringInput; sort: number }
+type SaveVars = { id: string; input: RecurringInput } | { id?: undefined; newId: string; input: RecurringInput; sort: number }
 
-/** Adds a recurring expense (no `id`, with the `sort` that puts it last) or changes one. */
+/**
+ * Adds a recurring expense (no `id`; `newId` is its real id, so it can be used before the
+ * server answers; `sort` puts it last) or changes one.
+ */
 export function useSaveRecurring() {
   return useRecurringMutation<SaveVars>(
     (householdId, vars) =>
       vars.id !== undefined
         ? updateRecurring(vars.id, vars.input)
-        : createRecurring(householdId, { ...vars.input, sort: vars.sort }),
+        : createRecurring(householdId, { ...vars.input, id: vars.newId, sort: vars.sort }),
     (list, vars, householdId) =>
       vars.id !== undefined
         ? list.map((recurring) => (recurring.id === vars.id ? { ...recurring, ...vars.input } : recurring))
@@ -68,7 +71,7 @@ export function useSaveRecurring() {
             ...list,
             {
               ...vars.input,
-              id: `new-${Date.now()}`,
+              id: vars.newId,
               household_id: householdId,
               necessity: vars.input.necessity ?? 'needed',
               sort: vars.sort,

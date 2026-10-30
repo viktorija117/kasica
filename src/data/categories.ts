@@ -26,7 +26,7 @@ export async function fetchCategories(householdId: string): Promise<Category[]> 
 
 export async function createCategory(
   householdId: string,
-  input: CategoryInput & { sort: number },
+  input: CategoryInput & { id: string; sort: number },
 ): Promise<Category> {
   const { data, error } = await supabase
     .from('categories')

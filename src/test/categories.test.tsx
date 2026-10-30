@@ -256,6 +256,7 @@ describe('Settings → Kategorije', () => {
       color: '#fb8c00',
       monthly_limit: null,
       default_necessity: 'needed',
+      id: expect.any(String),
       sort: 5,
     })
     const picker = await openPicker(user)

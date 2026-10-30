@@ -26,7 +26,7 @@ export async function fetchRecurring(householdId: string): Promise<RecurringExpe
 
 export async function createRecurring(
   householdId: string,
-  input: RecurringInput & { sort: number },
+  input: RecurringInput & { id: string; sort: number },
 ): Promise<RecurringExpense> {
   const { data, error } = await supabase
     .from('recurring_expenses')

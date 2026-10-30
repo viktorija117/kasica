@@ -136,6 +136,9 @@ export const sr = {
     intro: (month: string) =>
       `Koliko je stvarno preneto iz prethodnog meseca u ${month}? Ovaj iznos se pamti i koristi umesto izračunatog.`,
     amount: 'Preneto',
+    sign: 'Prethodni mesec je završen',
+    plus: 'U plusu',
+    minus: 'U minusu',
     automatic: (amount: string) => `Izračunato automatski: ${amount}`,
     save: 'Sačuvaj',
     reset: 'Vrati na automatski',

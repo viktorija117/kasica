@@ -11,7 +11,8 @@ export function useMyHousehold() {
   return useQuery({
     queryKey: queryKeys.household(userId),
     queryFn: () => fetchMyHousehold(userId),
-    staleTime: Infinity,
+    // Not Infinity: the other member can change the household (savings opening balance),
+    // and the app picks that up when it is opened again.
   })
 }
 

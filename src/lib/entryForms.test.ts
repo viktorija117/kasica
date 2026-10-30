@@ -5,6 +5,7 @@ import {
   newIncomeForm,
   newSavingForm,
   parseCarryOverride,
+  signedCarryOverride,
   savingToForm,
   validateIncomeForm,
   validateSavingForm,
@@ -73,5 +74,17 @@ describe('parseCarryOverride', () => {
     expect(parseCarryOverride('')).toBeNull()
     expect(parseCarryOverride('abc')).toBeNull()
     expect(parseCarryOverride('-5')).toBeNull()
+  })
+})
+
+describe('signedCarryOverride', () => {
+  it('makes the amount negative when the month ended in the red', () => {
+    expect(signedCarryOverride('3.000', true)).toBe(-3000)
+    expect(signedCarryOverride('3.000', false)).toBe(3000)
+  })
+
+  it('keeps zero as zero and rejects invalid input', () => {
+    expect(signedCarryOverride('0', true)).toBe(0)
+    expect(signedCarryOverride('abc', true)).toBeNull()
   })
 })

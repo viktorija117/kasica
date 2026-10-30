@@ -12,7 +12,7 @@ export function SavingsOpeningForm() {
   const [text, setText] = useState(() => (current ? amountToText(current) : ''))
   const [showError, setShowError] = useState(false)
   const save = useSaveSavingsOpening()
-  // Same rule as a carried-in amount: 0 or more, an empty field means 0.
+  // 0 or more; an empty field means 0.
   const amount = text.trim() === '' ? 0 : parseCarryOverride(text)
 
   const onSubmit = (event: FormEvent) => {

@@ -1,24 +1,10 @@
 import { supabase } from '../lib/supabase'
 import type { Expense } from './expenses'
+import { fetchAll, type Page } from './fetchAll'
 import type { Income } from './incomes'
 import type { Saving } from './savings'
 
 export type YearRows = { expenses: Expense[]; incomes: Income[]; savings: Saving[] }
-
-/** Supabase returns at most 1000 rows per request, so a year is read page by page. */
-const PAGE = 1000
-
-type Page<T> = (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }>
-
-async function fetchAll<T>(page: Page<T>): Promise<T[]> {
-  const rows: T[] = []
-  for (let from = 0; ; from += PAGE) {
-    const { data, error } = await page(from, from + PAGE - 1)
-    if (error) throw error
-    rows.push(...(data ?? []))
-    if (!data || data.length < PAGE) return rows
-  }
-}
 
 /** Rows of `table` in `year`, oldest first; the order is stable so pages never overlap. */
 function yearPage(table: 'expenses' | 'incomes' | 'savings', householdId: string, year: number) {

@@ -106,8 +106,17 @@ export function validateSavingForm(state: SavingFormState): FormResult<SavingInp
 
 // --- carry override ----------------------------------------------------------------------
 
-/** Reads the carried-in amount typed in "Uskladi stanje"; 0 is allowed. */
+/** Reads an amount of 0 or more (the carried-in amount, the savings opening balance). */
 export function parseCarryOverride(text: string): number | null {
   const amount = parseAmount(text)
   return amount === null || amount < 0 || amount > MAX_AMOUNT ? null : amount
+}
+
+/**
+ * The amount for "Uskladi stanje": typed without a sign (phone keyboards often have no minus
+ * key), with `negative` set when the previous month ended in the red.
+ */
+export function signedCarryOverride(text: string, negative: boolean): number | null {
+  const amount = parseCarryOverride(text)
+  return amount !== null && negative && amount !== 0 ? -amount : amount
 }

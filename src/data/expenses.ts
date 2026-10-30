@@ -1,5 +1,6 @@
 import { endOfMonthKey, type MonthKey } from '../lib/dates'
 import { supabase } from '../lib/supabase'
+import { fetchAll } from './fetchAll'
 import type { Enums, Tables, TablesInsert, Views } from '../types/database'
 
 export type Expense = Tables<'expenses'>
@@ -60,13 +61,15 @@ export async function deleteExpense(id: string): Promise<void> {
   if (error) throw error
 }
 
-export async function fetchSuggestions(householdId: string): Promise<ExpenseSuggestion[]> {
-  const { data, error } = await supabase
-    .from('expense_suggestions')
-    .select('*')
-    .eq('household_id', householdId)
-    .order('uses', { ascending: false })
-    .limit(2000)
-  if (error) throw error
-  return data
+/** Every distinct description of the household, most used first. */
+export function fetchSuggestions(householdId: string): Promise<ExpenseSuggestion[]> {
+  return fetchAll((from, to) =>
+    supabase
+      .from('expense_suggestions')
+      .select('*')
+      .eq('household_id', householdId)
+      .order('uses', { ascending: false })
+      .order('description')
+      .range(from, to),
+  )
 }

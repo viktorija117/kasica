@@ -185,8 +185,8 @@ export const fakeCategories = {
   fetchCategories: vi.fn(async () =>
     [...state.categories].sort((a, b) => a.sort - b.sort || a.name.localeCompare(b.name)),
   ),
-  createCategory: vi.fn(async (_householdId: string, input: CategoryInput & { sort: number }) => {
-    const category: Category = { ...makeCategory(input.sort, input.name, input.emoji ?? '📦'), ...input, id: newId('cat') }
+  createCategory: vi.fn(async (_householdId: string, input: CategoryInput & { id: string; sort: number }) => {
+    const category: Category = { ...makeCategory(input.sort, input.name, input.emoji ?? '📦'), ...input }
     state.categories.push(category)
     return category
   }),
@@ -261,8 +261,8 @@ export const fakeRecurring = {
   fetchRecurring: vi.fn(async () =>
     [...state.recurring].sort((a, b) => a.sort - b.sort || a.created_at.localeCompare(b.created_at)),
   ),
-  createRecurring: vi.fn(async (_householdId: string, input: RecurringInput & { sort: number }) => {
-    const recurring = makeRecurring(newId('rec'), input)
+  createRecurring: vi.fn(async (_householdId: string, input: RecurringInput & { id: string; sort: number }) => {
+    const recurring = makeRecurring(input.id, input)
     state.recurring.push(recurring)
     return recurring
   }),

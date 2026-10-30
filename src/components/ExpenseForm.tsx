@@ -85,9 +85,14 @@ export function ExpenseForm({
     () => pickableCategories(categories, editing?.category_id ?? paying?.category_id ?? null),
     [categories, editing, paying],
   )
+  // A suggestion would otherwise put the expense into an archived category.
+  const usableSuggestions = useMemo(() => {
+    const pickableIds = new Set(pickable.map((category) => category.id))
+    return suggestions.filter((suggestion) => pickableIds.has(suggestion.category_id))
+  }, [suggestions, pickable])
   const matches = useMemo(
-    () => matchSuggestions(suggestions, state.description),
-    [suggestions, state.description],
+    () => matchSuggestions(usableSuggestions, state.description),
+    [usableSuggestions, state.description],
   )
   const memberOptions = members.map((member) => ({
     value: member.user_id,
@@ -101,7 +106,7 @@ export function ExpenseForm({
   const onDescription = (value: string) => {
     dispatch({ type: 'description', value })
     // Typing a known description in full picks its category, like choosing the suggestion.
-    const exact = state.categoryId ? undefined : findExactSuggestion(suggestions, value)
+    const exact = state.categoryId ? undefined : findExactSuggestion(usableSuggestions, value)
     if (exact) dispatch({ type: 'suggestion', suggestion: { ...exact, description: value } })
   }
 

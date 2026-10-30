@@ -42,13 +42,16 @@ function useCategoryMutation<Vars>(
   })
 }
 
-type SaveVars = { id: string; input: CategoryInput } | { id?: undefined; input: CategoryInput; sort: number }
+type SaveVars = { id: string; input: CategoryInput } | { id?: undefined; newId: string; input: CategoryInput; sort: number }
 
-/** Adds a category (no `id`, with the `sort` that puts it last) or changes one. */
+/**
+ * Adds a category (no `id`; `newId` is its real id, so it can be used before the server
+ * answers; `sort` puts it last) or changes one.
+ */
 export function useSaveCategory() {
   return useCategoryMutation<SaveVars>(
     (householdId, vars) =>
-      vars.id !== undefined ? updateCategory(vars.id, vars.input) : createCategory(householdId, { ...vars.input, sort: vars.sort }),
+      vars.id !== undefined ? updateCategory(vars.id, vars.input) : createCategory(householdId, { ...vars.input, id: vars.newId, sort: vars.sort }),
     (list, vars, householdId) =>
       vars.id !== undefined
         ? list.map((category) => (category.id === vars.id ? { ...category, ...vars.input } : category))
@@ -56,7 +59,7 @@ export function useSaveCategory() {
             ...list,
             {
               ...vars.input,
-              id: `new-${Date.now()}`,
+              id: vars.newId,
               household_id: householdId,
               sort: vars.sort,
               monthly_limit: vars.input.monthly_limit ?? null,

@@ -26,11 +26,17 @@ export async function fetchFiscalReceipt(url: string): Promise<RawReceipt> {
   throw error ?? new Error('receipt_site_unavailable')
 }
 
+// A started function stays running for a few minutes; warming it again sooner is wasted.
+const WARM_FOR_MS = 3 * 60_000
+let warmedAt = -Infinity
+
 /**
  * Starts the `fiscal-receipt` Edge Function while the camera is still aiming, so reading the
  * receipt does not wait for its cold start. Failures do not matter.
  */
 export function warmUpFiscalReceipt(): void {
+  if (Date.now() - warmedAt < WARM_FOR_MS) return
+  warmedAt = Date.now()
   supabase.functions.invoke('fiscal-receipt', { body: { warm: true } }).catch(() => undefined)
 }
 

@@ -24,9 +24,10 @@ export function GuestOnly() {
 export function RequireHousehold() {
   const { data, isPending, error, refetch } = useMyHousehold()
   if (isPending) return <LoadingScreen />
+  // A failed background refetch (offline) keeps the household it already has.
+  if (data) return <Outlet />
   if (error) return <ErrorScreen error={error} onRetry={() => void refetch()} />
-  if (!data) return <Navigate to="/domacinstvo" replace />
-  return <Outlet />
+  return <Navigate to="/domacinstvo" replace />
 }
 
 /** The household setup screen is only for users who have none yet. */

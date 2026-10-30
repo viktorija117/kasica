@@ -4,11 +4,12 @@ import { useSaveMonthSetting } from '../hooks/useMonthSummary'
 import { sr } from '../i18n/sr'
 import type { MonthBalance } from '../lib/budget'
 import { monthLabel, type MonthKey } from '../lib/dates'
-import { parseCarryOverride } from '../lib/entryForms'
+import { signedCarryOverride } from '../lib/entryForms'
 import { amountToText, formatRSD } from '../lib/money'
 import { AmountInput } from './AmountInput'
 import { BottomSheet } from './BottomSheet'
 import { Button } from './Button'
+import { SegmentedControl } from './SegmentedControl'
 
 type Props = {
   open: boolean
@@ -17,6 +18,11 @@ type Props = {
   setting: MonthSettingInput
   onClose: () => void
 }
+
+const signOptions: { value: 'plus' | 'minus'; label: string }[] = [
+  { value: 'plus', label: sr.carry.plus },
+  { value: 'minus', label: sr.carry.minus },
+]
 
 /** "Uskladi stanje": the amount actually carried into the month, remembered as carry_override. */
 export function CarrySheet({ open, month, balance, setting, onClose }: Props) {
@@ -37,9 +43,13 @@ type FormProps = Omit<Props, 'open' | 'onClose'> & {
 
 function CarryForm({ month, balance, setting, amountRef, onDone }: FormProps) {
   const [text, setText] = useState(() => (balance.carryOverridden ? amountToText(balance.carryIn) : ''))
+  // Starts on the side the month is on now, so a month in the red does not need a tap.
+  const [sign, setSign] = useState<'plus' | 'minus'>(() =>
+    (balance.carryOverridden ? balance.carryIn : balance.autoCarry) < 0 ? 'minus' : 'plus',
+  )
   const [showError, setShowError] = useState(false)
   const save = useSaveMonthSetting()
-  const amount = parseCarryOverride(text)
+  const amount = signedCarryOverride(text, sign === 'minus')
 
   const write = (carryOverride: number | null) => {
     save.mutate({ month, input: { ...setting, carry_override: carryOverride } })
@@ -58,6 +68,10 @@ function CarryForm({ month, balance, setting, amountRef, onDone }: FormProps) {
   return (
     <form noValidate onSubmit={onSubmit} className="flex flex-col gap-5">
       <p className="text-sm text-text-muted">{sr.carry.intro(monthLabel(month))}</p>
+      <div className="flex flex-col gap-1.5">
+        <span className="text-sm font-medium text-text-muted">{sr.carry.sign}</span>
+        <SegmentedControl value={sign} options={signOptions} onChange={setSign} />
+      </div>
       <AmountInput
         inputRef={amountRef}
         label={sr.carry.amount}
